@@ -34,6 +34,12 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json())
+
+// Health check (before auth middleware so it's always accessible)
+app.get('/api/health', (_, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
 app.use(ClerkExpressWithAuth())
 
 // Routes
@@ -43,11 +49,6 @@ app.use('/api/decisions', decisionsRouter)
 app.use('/api/votes', votesRouter)
 app.use('/api/comments', commentsRouter)
 app.use('/api/content', contentRouter)
-
-// Health check
-app.get('/api/health', (_, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
-})
 
 // Error handler
 app.use(errorHandler)
