@@ -10,6 +10,9 @@ build/
 .env.local
 .env.*.local
 
+# Local secrets reference (contains API keys)
+TECH_STACK.md
+
 # IDE
 .idea/
 .vscode/
