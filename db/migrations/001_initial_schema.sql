@@ -98,28 +98,4 @@ CREATE TABLE IF NOT EXISTS ai_summaries (
     content TEXT NOT NULL,
     model TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_ai_summaries_segment_id ON ai_summaries(segment_id);
-
--- Updated_at trigger function
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Apply updated_at triggers
-CREATE TRIGGER update_shows_updated_at BEFORE UPDATE ON shows
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_segments_updated_at BEFORE UPDATE ON segments
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_segment_content_updated_at BEFORE UPDATE ON segment_content
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_decisions_updated_at BEFORE UPDATE ON decisions
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+)

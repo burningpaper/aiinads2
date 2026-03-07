@@ -20,11 +20,16 @@ async function seed() {
 
   const sqlContent = fs.readFileSync(seedFile, 'utf8')
 
-  // Split by semicolons and run each statement
-  const statements = sqlContent
+  // Remove standalone comment lines and split by semicolons
+  const cleanedSql = sqlContent
+    .split('\n')
+    .filter((line) => !line.trim().startsWith('--'))
+    .join('\n')
+
+  const statements = cleanedSql
     .split(/;\s*$/m)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith('--'))
+    .filter((s) => s.length > 0)
 
   for (const statement of statements) {
     await sql(statement)
