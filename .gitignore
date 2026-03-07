@@ -34,3 +34,4 @@ playwright-report/
 # Temp files
 *.tmp
 *.temp
+.vercel
