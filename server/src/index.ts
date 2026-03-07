@@ -1,0 +1,64 @@
+import 'dotenv/config'
+import express from 'express'
+import cors from 'cors'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
+import { ClerkExpressWithAuth } from '@clerk/clerk-sdk-node'
+
+import { showsRouter } from './routes/shows.js'
+import { segmentsRouter } from './routes/segments.js'
+import { decisionsRouter } from './routes/decisions.js'
+import { votesRouter } from './routes/votes.js'
+import { commentsRouter } from './routes/comments.js'
+import { contentRouter } from './routes/content.js'
+import { errorHandler } from './middleware/errorHandler.js'
+import { setupSocketHandlers } from './socket.js'
+
+const app = express()
+const httpServer = createServer(app)
+
+// Socket.io setup
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+  },
+})
+
+// Make io available to routes
+app.set('io', io)
+
+// Middleware
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true,
+}))
+app.use(express.json())
+app.use(ClerkExpressWithAuth())
+
+// Routes
+app.use('/api/shows', showsRouter)
+app.use('/api/segments', segmentsRouter)
+app.use('/api/decisions', decisionsRouter)
+app.use('/api/votes', votesRouter)
+app.use('/api/comments', commentsRouter)
+app.use('/api/content', contentRouter)
+
+// Health check
+app.get('/api/health', (_, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+// Error handler
+app.use(errorHandler)
+
+// Socket.io handlers
+setupSocketHandlers(io)
+
+// Start server
+const PORT = process.env.PORT || 3000
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
+})
+
+export { io }
