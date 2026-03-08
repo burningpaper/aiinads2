@@ -45,6 +45,11 @@ async function request<T>(
     throw new ApiError(response.status, error.message || 'Request failed')
   }
 
+  // Handle 204 No Content responses (e.g., DELETE)
+  if (response.status === 204) {
+    return undefined as T
+  }
+
   return response.json()
 }
 
