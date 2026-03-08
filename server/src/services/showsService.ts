@@ -19,19 +19,8 @@ export const showsService = {
   },
 
   async update(id: string, data: Partial<Pick<Show, 'title' | 'status'>>): Promise<Show> {
-    const updates: string[] = []
-    const values: unknown[] = []
-
-    if (data.title !== undefined) {
-      updates.push('title')
-      values.push(data.title)
-    }
-    if (data.status !== undefined) {
-      updates.push('status')
-      values.push(data.status)
-    }
-
-    if (updates.length === 0) {
+    // Return existing if no updates provided
+    if (data.title === undefined && data.status === undefined) {
       return this.getById(id)
     }
 
@@ -81,11 +70,12 @@ export const showsService = {
             COUNT(*) as total
           FROM votes WHERE decision_id = ${decision.id}
         `
+        const countRow = counts[0] || { option_a: '0', option_b: '0', total: '0' }
         voteCounts = {
           decisionId: decision.id,
-          optionA: parseInt(counts[0].option_a, 10),
-          optionB: parseInt(counts[0].option_b, 10),
-          total: parseInt(counts[0].total, 10),
+          optionA: parseInt(String(countRow.option_a), 10) || 0,
+          optionB: parseInt(String(countRow.option_b), 10) || 0,
+          total: parseInt(String(countRow.total), 10) || 0,
         }
       }
     }

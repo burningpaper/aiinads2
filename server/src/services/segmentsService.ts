@@ -41,11 +41,12 @@ export const segmentsService = {
           COUNT(*) as total
         FROM votes WHERE decision_id = ${decision.id}
       `
+      const countRow = counts[0] || { option_a: '0', option_b: '0', total: '0' }
       voteCounts = {
         decisionId: decision.id,
-        optionA: parseInt(counts[0].option_a, 10),
-        optionB: parseInt(counts[0].option_b, 10),
-        total: parseInt(counts[0].total, 10),
+        optionA: parseInt(String(countRow.option_a), 10) || 0,
+        optionB: parseInt(String(countRow.option_b), 10) || 0,
+        total: parseInt(String(countRow.total), 10) || 0,
       }
     }
 
@@ -76,11 +77,12 @@ export const segmentsService = {
           COUNT(*) as total
         FROM votes WHERE decision_id = ${decision.id}
       `
+      const countRow = counts[0] || { option_a: '0', option_b: '0', total: '0' }
       voteCounts = {
         decisionId: decision.id,
-        optionA: parseInt(counts[0].option_a, 10),
-        optionB: parseInt(counts[0].option_b, 10),
-        total: parseInt(counts[0].total, 10),
+        optionA: parseInt(String(countRow.option_a), 10) || 0,
+        optionB: parseInt(String(countRow.option_b), 10) || 0,
+        total: parseInt(String(countRow.total), 10) || 0,
       }
     }
 
@@ -110,11 +112,16 @@ export const segmentsService = {
     const segment = await this.getById(segmentId)
 
     // Mark any currently live segment as complete
-    await sql`
+    const completed = await sql`
       UPDATE segments
       SET status = 'complete', completed_at = NOW()
       WHERE show_id = ${segment.showId} AND status = 'live'
+      RETURNING id
     `
+
+    if (completed.length > 0) {
+      console.log(`Completed segment ${completed[0].id}`)
+    }
 
     // Activate this segment
     const rows = await sql`
@@ -123,6 +130,10 @@ export const segmentsService = {
       WHERE id = ${segmentId}
       RETURNING *
     `
+
+    if (rows.length === 0) {
+      throw new NotFoundError('Segment')
+    }
 
     return toCamelCase(rows[0]) as Segment
   },

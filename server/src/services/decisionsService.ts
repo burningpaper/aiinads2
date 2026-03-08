@@ -55,6 +55,10 @@ export const decisionsService = {
       RETURNING *
     `
 
+    if (rows.length === 0) {
+      throw new NotFoundError('Decision')
+    }
+
     return toCamelCase(rows[0]) as Decision
   },
 
@@ -90,8 +94,10 @@ export const decisionsService = {
       FROM votes WHERE decision_id = ${id}
     `
 
-    const countA = parseInt(counts[0].option_a, 10)
-    const countB = parseInt(counts[0].option_b, 10)
+    // COUNT always returns a row, but be defensive
+    const countRow = counts[0] || { option_a: '0', option_b: '0' }
+    const countA = parseInt(String(countRow.option_a), 10) || 0
+    const countB = parseInt(String(countRow.option_b), 10) || 0
     const winningOption = countA >= countB ? 'a' : 'b'
 
     const rows = await sql`
@@ -113,11 +119,12 @@ export const decisionsService = {
       FROM votes WHERE decision_id = ${decisionId}
     `
 
+    const countRow = counts[0] || { option_a: '0', option_b: '0', total: '0' }
     return {
       decisionId,
-      optionA: parseInt(counts[0].option_a, 10),
-      optionB: parseInt(counts[0].option_b, 10),
-      total: parseInt(counts[0].total, 10),
+      optionA: parseInt(String(countRow.option_a), 10) || 0,
+      optionB: parseInt(String(countRow.option_b), 10) || 0,
+      total: parseInt(String(countRow.total), 10) || 0,
     }
   },
 }

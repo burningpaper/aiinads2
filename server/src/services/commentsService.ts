@@ -83,11 +83,16 @@ Be concise. Use plain language.`,
     const summary = completion.choices[0]?.message?.content || 'Unable to generate summary.'
 
     // Save summary
-    await sql`
+    const inserted = await sql`
       INSERT INTO ai_summaries (show_id, segment_id, summary_type, content, model)
       SELECT show_id, ${segmentId}, 'comments', ${summary}, 'gpt-4o'
       FROM segments WHERE id = ${segmentId}
+      RETURNING id
     `
+
+    if (inserted.length === 0) {
+      console.error(`Failed to insert AI summary for segment ${segmentId}`)
+    }
 
     // Mark comments as processed
     await sql`
