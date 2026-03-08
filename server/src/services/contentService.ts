@@ -61,7 +61,7 @@ export const contentService = {
   },
 
   async delete(id: string): Promise<void> {
-    const result = await sql`DELETE FROM segment_content WHERE id = ${id}`
+    const result = await sql`DELETE FROM segment_content WHERE id = ${id} RETURNING id`
     if (result.length === 0) {
       throw new NotFoundError('Content')
     }
