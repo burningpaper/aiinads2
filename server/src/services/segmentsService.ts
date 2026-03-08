@@ -91,6 +91,21 @@ export const segmentsService = {
     }
   },
 
+  async update(segmentId: string, data: { title?: string }): Promise<Segment> {
+    // Verify segment exists
+    await this.getById(segmentId)
+
+    const rows = await sql`
+      UPDATE segments
+      SET title = COALESCE(${data.title}, title),
+          updated_at = NOW()
+      WHERE id = ${segmentId}
+      RETURNING *
+    `
+
+    return toCamelCase(rows[0]) as Segment
+  },
+
   async activate(segmentId: string): Promise<Segment> {
     const segment = await this.getById(segmentId)
 

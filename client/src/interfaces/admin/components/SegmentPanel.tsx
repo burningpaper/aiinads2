@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useShowStore } from '@/stores/showStore'
@@ -18,6 +19,8 @@ export function SegmentPanel() {
   const { segmentId } = useParams<{ segmentId: string }>()
   const queryClient = useQueryClient()
   const { show, segments } = useShowStore()
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editedTitle, setEditedTitle] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['segment', segmentId],
@@ -25,11 +28,26 @@ export function SegmentPanel() {
     enabled: !!segmentId,
   })
 
+  useEffect(() => {
+    if (data?.segment.title) {
+      setEditedTitle(data.segment.title)
+    }
+  }, [data?.segment.title])
+
   const activateMutation = useMutation({
     mutationFn: () => api.post(`/segments/${segmentId}/activate`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['show'] })
       queryClient.invalidateQueries({ queryKey: ['segment'] })
+    },
+  })
+
+  const updateTitleMutation = useMutation({
+    mutationFn: (title: string) => api.patch(`/segments/${segmentId}`, { title }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
+      queryClient.invalidateQueries({ queryKey: ['show'] })
+      setIsEditingTitle(false)
     },
   })
 
@@ -64,7 +82,60 @@ export function SegmentPanel() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm text-gray-500">Segment {segment.orderIndex}</p>
-              <h1 className="font-serif text-2xl text-gray-900">{segment.title}</h1>
+              {isEditingTitle ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    className="font-serif text-2xl text-gray-900 border-b-2 border-blue-500 focus:outline-none bg-transparent"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateTitleMutation.mutate(editedTitle)
+                      } else if (e.key === 'Escape') {
+                        setEditedTitle(segment.title)
+                        setIsEditingTitle(false)
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => updateTitleMutation.mutate(editedTitle)}
+                    disabled={updateTitleMutation.isPending}
+                    className="text-green-600 hover:text-green-700 p-1"
+                    title="Save"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditedTitle(segment.title)
+                      setIsEditingTitle(false)
+                    }}
+                    className="text-gray-400 hover:text-gray-600 p-1"
+                    title="Cancel"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h1 className="font-serif text-2xl text-gray-900">{segment.title}</h1>
+                  <button
+                    onClick={() => setIsEditingTitle(true)}
+                    className="text-gray-400 hover:text-gray-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Edit title"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </div>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               segment.status === 'live' ? 'bg-green-100 text-green-700' :

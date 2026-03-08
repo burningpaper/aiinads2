@@ -19,6 +19,20 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   }
 })
 
+// Update segment (admin only)
+router.patch('/:id', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const segment = await segmentsService.update(req.params.id, req.body)
+
+    const io = req.app.get('io')
+    emitToShow(io, segment.showId, 'segment:updated', segment)
+
+    res.json(segment)
+  } catch (error) {
+    next(error)
+  }
+})
+
 // Get segment archive data (public)
 router.get('/:id/archive', async (req: Request, res: Response, next: NextFunction) => {
   try {
