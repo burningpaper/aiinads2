@@ -10,18 +10,34 @@ class ApiError extends Error {
   }
 }
 
+// Store for auth token getter function (set by useApiAuth hook)
+let getAuthToken: (() => Promise<string | null>) | null = null
+
+export function setAuthTokenGetter(getter: () => Promise<string | null>) {
+  getAuthToken = getter
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`
 
+  // Get auth token if available
+  const token = getAuthToken ? await getAuthToken() : null
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
   })
 
   if (!response.ok) {

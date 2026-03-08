@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
+import { useUser, useAuth } from '@clerk/clerk-react'
 import { useShowState } from '@/hooks/useShowState'
+import { setAuthTokenGetter } from '@/lib/api'
 import { AdminSidebar } from './components/AdminSidebar'
 import { SegmentPanel } from './components/SegmentPanel'
 import { DashboardHome } from './components/DashboardHome'
@@ -9,7 +11,13 @@ const DEFAULT_SHOW_ID = import.meta.env.VITE_DEFAULT_SHOW_ID || '00000000-0000-0
 
 export function AdminLayout() {
   const { user } = useUser()
+  const { getToken } = useAuth()
   const { isLoading, error } = useShowState(DEFAULT_SHOW_ID)
+
+  // Set up auth token getter for API calls
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken())
+  }, [getToken])
 
   if (isLoading) {
     return (
