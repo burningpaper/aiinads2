@@ -10,6 +10,39 @@ export interface Show {
 }
 
 export const showsService = {
+  async list(): Promise<Show[]> {
+    const rows = await sql`SELECT * FROM shows ORDER BY created_at DESC`
+    return rowsToCamelCase(rows) as Show[]
+  },
+
+  async create(title: string): Promise<Show> {
+    // Create the show
+    const showRows = await sql`
+      INSERT INTO shows (title, status)
+      VALUES (${title}, 'setup')
+      RETURNING *
+    `
+    const show = toCamelCase(showRows[0]) as Show
+
+    // Create 5 default segments
+    const segmentTitles = [
+      'Introduction',
+      'Segment 2',
+      'Segment 3',
+      'Segment 4',
+      'Conclusion',
+    ]
+
+    for (let i = 0; i < segmentTitles.length; i++) {
+      await sql`
+        INSERT INTO segments (show_id, order_index, title, status)
+        VALUES (${show.id}, ${i + 1}, ${segmentTitles[i]}, 'draft')
+      `
+    }
+
+    return show
+  },
+
   async getById(id: string): Promise<Show> {
     const rows = await sql`SELECT * FROM shows WHERE id = ${id}`
     if (rows.length === 0) {

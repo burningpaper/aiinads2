@@ -6,6 +6,31 @@ import { emitToShow } from '../socket.js'
 
 const router = Router()
 
+// List all shows (admin only)
+router.get('/', requireAuth, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const shows = await showsService.list()
+    res.json(shows)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Create a new show (admin only)
+router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { title } = req.body
+    if (!title || typeof title !== 'string') {
+      res.status(400).json({ error: 'Title is required' })
+      return
+    }
+    const show = await showsService.create(title.trim())
+    res.status(201).json(show)
+  } catch (error) {
+    next(error)
+  }
+})
+
 // Get show state (public)
 router.get('/:id/state', async (req: Request, res: Response, next: NextFunction) => {
   try {
