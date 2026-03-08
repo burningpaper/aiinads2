@@ -11,6 +11,7 @@ import { decisionsRouter } from './routes/decisions.js'
 import { votesRouter } from './routes/votes.js'
 import { commentsRouter } from './routes/comments.js'
 import { contentRouter } from './routes/content.js'
+import { uploadsRouter } from './routes/uploads.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { setupSocketHandlers } from './socket.js'
 
@@ -49,6 +50,7 @@ app.use('/api/decisions', decisionsRouter)
 app.use('/api/votes', votesRouter)
 app.use('/api/comments', commentsRouter)
 app.use('/api/content', contentRouter)
+app.use('/api/uploads', uploadsRouter)
 
 // Error handler
 app.use(errorHandler)
