@@ -1,9 +1,52 @@
+import { useState, useEffect } from 'react'
 import type { Decision, VoteCounts } from '@/types'
 
 interface PresentationVotingProps {
   decision: Decision
   voteCounts: VoteCounts | null
   isConnected: boolean
+}
+
+function useCountdown(openedAt: string | null, countdownSeconds: number | null) {
+  const [remaining, setRemaining] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!openedAt || !countdownSeconds) {
+      setRemaining(null)
+      return
+    }
+
+    const calculateRemaining = () => {
+      const openedTime = new Date(openedAt).getTime()
+      const now = Date.now()
+      const elapsed = Math.floor((now - openedTime) / 1000)
+      const left = countdownSeconds - elapsed
+      return Math.max(0, left)
+    }
+
+    setRemaining(calculateRemaining())
+
+    const interval = setInterval(() => {
+      const left = calculateRemaining()
+      setRemaining(left)
+      if (left <= 0) {
+        clearInterval(interval)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [openedAt, countdownSeconds])
+
+  return remaining
+}
+
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins > 0) {
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+  return `${secs}`
 }
 
 export function PresentationVoting({ decision, voteCounts, isConnected }: PresentationVotingProps) {
@@ -15,12 +58,29 @@ export function PresentationVoting({ decision, voteCounts, isConnected }: Presen
   const winnerA = decision.winningOption === 'a'
   const winnerB = decision.winningOption === 'b'
 
+  const remaining = useCountdown(decision.openedAt, decision.countdownSeconds)
+  const isExpired = remaining !== null && remaining <= 0
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white flex flex-col items-center justify-center p-16">
       {/* Connection indicator */}
       {!isConnected && (
         <div className="fixed top-4 right-4 bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-full text-lg animate-pulse">
           Reconnecting...
+        </div>
+      )}
+
+      {/* Countdown Timer */}
+      {remaining !== null && !isClosed && (
+        <div className={`mb-8 animate-fade-in-up ${remaining <= 10 ? 'animate-pulse' : ''}`}>
+          <div className={`text-8xl font-bold tabular-nums ${
+            remaining <= 10 ? 'text-red-400' : 'text-white'
+          }`}>
+            {formatTime(remaining)}
+          </div>
+          <p className="text-2xl text-primary-300 mt-2">
+            {isExpired ? 'Time up!' : 'seconds remaining'}
+          </p>
         </div>
       )}
 

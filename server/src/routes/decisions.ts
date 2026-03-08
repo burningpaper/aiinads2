@@ -30,7 +30,8 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response, next: Next
 // Open decision for voting (admin only)
 router.post('/:id/open', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const decision = await decisionsService.open(req.params.id)
+    const { countdownSeconds } = req.body
+    const decision = await decisionsService.open(req.params.id, countdownSeconds)
 
     // Get segment for showId
     const segment = await segmentsService.getById(decision.segmentId)

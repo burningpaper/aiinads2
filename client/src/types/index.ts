@@ -39,6 +39,7 @@ export interface Decision {
   winningOption: 'a' | 'b' | null
   openedAt: string | null
   closedAt: string | null
+  countdownSeconds: number | null
 }
 
 export interface Vote {
@@ -63,6 +64,7 @@ export interface Comment {
   audienceSessionId: string
   content: string
   aiProcessed: boolean
+  hidden: boolean
   createdAt: string
 }
 

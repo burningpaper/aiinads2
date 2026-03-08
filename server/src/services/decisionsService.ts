@@ -11,6 +11,7 @@ export interface Decision {
   winningOption: 'a' | 'b' | null
   openedAt: string | null
   closedAt: string | null
+  countdownSeconds: number | null
 }
 
 export const decisionsService = {
@@ -62,7 +63,7 @@ export const decisionsService = {
     return toCamelCase(rows[0]) as Decision
   },
 
-  async open(id: string): Promise<Decision> {
+  async open(id: string, countdownSeconds?: number): Promise<Decision> {
     const decision = await this.getById(id)
 
     if (decision.status !== 'pending') {
@@ -71,7 +72,7 @@ export const decisionsService = {
 
     const rows = await sql`
       UPDATE decisions
-      SET status = 'open', opened_at = NOW()
+      SET status = 'open', opened_at = NOW(), countdown_seconds = ${countdownSeconds ?? null}
       WHERE id = ${id}
       RETURNING *
     `

@@ -14,6 +14,7 @@ interface DecisionManagerProps {
 export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive }: DecisionManagerProps) {
   const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
+  const [showOpenOptions, setShowOpenOptions] = useState(false)
   const [question, setQuestion] = useState(decision?.question || '')
   const [optionA, setOptionA] = useState(decision?.optionA || '')
   const [optionB, setOptionB] = useState(decision?.optionB || '')
@@ -44,9 +45,11 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
   })
 
   const openMutation = useMutation({
-    mutationFn: () => api.post(`/decisions/${decision!.id}/open`, {}),
+    mutationFn: (countdown?: number | null) =>
+      api.post(`/decisions/${decision!.id}/open`, { countdownSeconds: countdown }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
+      setShowOpenOptions(false)
     },
   })
 
@@ -66,10 +69,8 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
     })
   }
 
-  const handleOpen = () => {
-    if (confirm('Open voting? The audience will be able to cast votes.')) {
-      openMutation.mutate()
-    }
+  const handleOpenWithCountdown = (seconds: number | null) => {
+    openMutation.mutate(seconds)
   }
 
   const handleClose = () => {
@@ -169,14 +170,55 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
             </div>
 
             {/* Controls */}
-            {decision!.status === 'pending' && isSegmentLive && (
+            {decision!.status === 'pending' && isSegmentLive && !showOpenOptions && (
               <button
-                onClick={handleOpen}
-                disabled={openMutation.isPending}
+                onClick={() => setShowOpenOptions(true)}
                 className="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-medium"
               >
                 Open Voting
               </button>
+            )}
+
+            {decision!.status === 'pending' && isSegmentLive && showOpenOptions && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 font-medium">Select voting duration:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleOpenWithCountdown(30)}
+                    disabled={openMutation.isPending}
+                    className="bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    30 seconds
+                  </button>
+                  <button
+                    onClick={() => handleOpenWithCountdown(60)}
+                    disabled={openMutation.isPending}
+                    className="bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    1 minute
+                  </button>
+                  <button
+                    onClick={() => handleOpenWithCountdown(120)}
+                    disabled={openMutation.isPending}
+                    className="bg-green-600 hover:bg-green-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    2 minutes
+                  </button>
+                  <button
+                    onClick={() => handleOpenWithCountdown(null)}
+                    disabled={openMutation.isPending}
+                    className="bg-gray-600 hover:bg-gray-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    No timer
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowOpenOptions(false)}
+                  className="w-full text-gray-500 hover:text-gray-700 py-2 text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
             )}
 
             {decision!.status === 'open' && (

@@ -41,4 +41,43 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response, next: Next
   }
 })
 
+// Reset show for rehearsal (admin only)
+router.post('/:id/reset', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await showsService.resetForRehearsal(req.params.id)
+
+    // Emit reset event so all clients refresh
+    const io = req.app.get('io')
+    emitToShow(io, req.params.id, 'show:reset', { showId: req.params.id })
+
+    res.json(result)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Export votes and comments as CSV (admin only)
+router.get('/:id/export', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { type } = req.query
+    const showId = req.params.id
+
+    if (type === 'votes') {
+      const data = await showsService.exportVotes(showId)
+      res.setHeader('Content-Type', 'text/csv')
+      res.setHeader('Content-Disposition', `attachment; filename="votes-${showId}.csv"`)
+      res.send(data)
+    } else if (type === 'comments') {
+      const data = await showsService.exportComments(showId)
+      res.setHeader('Content-Type', 'text/csv')
+      res.setHeader('Content-Disposition', `attachment; filename="comments-${showId}.csv"`)
+      res.send(data)
+    } else {
+      res.status(400).json({ error: 'Invalid export type. Use ?type=votes or ?type=comments' })
+    }
+  } catch (error) {
+    next(error)
+  }
+})
+
 export { router as showsRouter }

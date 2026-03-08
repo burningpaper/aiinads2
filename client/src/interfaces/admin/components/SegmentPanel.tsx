@@ -53,9 +53,16 @@ export function SegmentPanel() {
 
   const handleActivate = () => {
     const currentLive = segments.find((s) => s.status === 'live')
-    const message = currentLive
-      ? `This will complete "${currentLive.title}" and activate this segment. Continue?`
-      : 'Activate this segment? It will become visible to the audience.'
+    let message: string
+
+    if (currentLive) {
+      const isGoingBack = data?.segment && data.segment.orderIndex < currentLive.orderIndex
+      message = isGoingBack
+        ? `Go back to "${data.segment.title}"? The current segment "${currentLive.title}" will be marked complete.`
+        : `This will complete "${currentLive.title}" and activate this segment. Continue?`
+    } else {
+      message = 'Activate this segment? It will become visible to the audience.'
+    }
 
     if (confirm(message)) {
       activateMutation.mutate()
@@ -71,7 +78,7 @@ export function SegmentPanel() {
   }
 
   const { segment, content, decision, voteCounts } = data
-  const canActivate = show?.status === 'live' && segment.status === 'draft'
+  const canActivate = show?.status === 'live' && segment.status !== 'live'
 
   return (
     <div className="grid lg:grid-cols-3 gap-8">

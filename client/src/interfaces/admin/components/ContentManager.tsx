@@ -23,6 +23,13 @@ export function ContentManager({ segmentId, content }: ContentManagerProps) {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [editFile, setEditFile] = useState<File | null>(null)
+  const [isEditUploading, setIsEditUploading] = useState(false)
+  const editFileInputRef = useRef<HTMLInputElement>(null)
+
   const sortedContent = [...content].sort((a, b) => a.displayOrder - b.displayOrder)
 
   const addMutation = useMutation({
@@ -43,6 +50,64 @@ export function ContentManager({ segmentId, content }: ContentManagerProps) {
       queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
     },
   })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, contentValue }: { id: string; contentValue: string }) =>
+      api.patch(`/content/${id}`, { contentValue }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
+      resetEditForm()
+    },
+  })
+
+  const startEditing = (item: SegmentContent) => {
+    setEditingId(item.id)
+    setEditValue(item.contentValue)
+    setEditFile(null)
+  }
+
+  const resetEditForm = () => {
+    setEditingId(null)
+    setEditValue('')
+    setEditFile(null)
+    setIsEditUploading(false)
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = ''
+    }
+  }
+
+  const handleEditFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setEditFile(file)
+    }
+  }
+
+  const handleSaveEdit = async (item: SegmentContent) => {
+    // For file types with a new file selected
+    if ((item.contentType === 'image' || item.contentType === 'pdf') && editFile) {
+      setIsEditUploading(true)
+      try {
+        const uploadEndpoint = item.contentType === 'image' ? '/uploads/image' : '/uploads/pdf'
+        const result = await api.upload<UploadResult>(uploadEndpoint, editFile)
+        updateMutation.mutate({ id: item.id, contentValue: result.url })
+      } catch (error) {
+        console.error('Upload failed:', error)
+        setIsEditUploading(false)
+        alert('Upload failed. Please try again.')
+      }
+      return
+    }
+
+    // For text/youtube, or file types without new file (no change to file)
+    if (item.contentType === 'text' || item.contentType === 'youtube') {
+      if (!editValue.trim()) return
+      updateMutation.mutate({ id: item.id, contentValue: editValue.trim() })
+    } else {
+      // File type with no new file - nothing to save
+      resetEditForm()
+    }
+  }
 
   const resetForm = () => {
     setIsAdding(false)
@@ -105,41 +170,140 @@ export function ContentManager({ segmentId, content }: ContentManagerProps) {
 
       <div className="divide-y divide-gray-100">
         {sortedContent.map((item) => (
-          <div key={item.id} className="px-6 py-4 flex items-start gap-4">
-            <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">
-              {item.displayOrder}
-            </span>
-            <div className="flex-1 min-w-0">
-              <span className="text-xs font-medium text-gray-400 uppercase">
-                {item.contentType}
-              </span>
-              {item.contentType === 'image' ? (
-                <div className="mt-2">
-                  <img
-                    src={item.contentValue}
-                    alt="Content preview"
-                    className="max-w-xs max-h-24 rounded object-cover"
-                  />
+          <div key={item.id} className="px-6 py-4">
+            {editingId === item.id ? (
+              // Edit mode
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-primary-100 rounded flex items-center justify-center text-xs text-primary-600">
+                    {item.displayOrder}
+                  </span>
+                  <span className="text-xs font-medium text-primary-600 uppercase">
+                    Editing {item.contentType}
+                  </span>
                 </div>
-              ) : (
-                <p className="text-gray-700 mt-1 truncate">
-                  {item.contentType === 'text'
-                    ? item.contentValue.slice(0, 100) +
-                      (item.contentValue.length > 100 ? '...' : '')
-                    : item.contentValue}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={() => {
-                if (confirm('Delete this content?')) {
-                  deleteMutation.mutate(item.id)
-                }
-              }}
-              className="text-red-500 hover:text-red-700 text-sm"
-            >
-              Delete
-            </button>
+
+                {item.contentType === 'text' && (
+                  <textarea
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    autoFocus
+                  />
+                )}
+
+                {item.contentType === 'youtube' && (
+                  <input
+                    type="url"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    autoFocus
+                  />
+                )}
+
+                {(item.contentType === 'image' || item.contentType === 'pdf') && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Current file:</p>
+                    {item.contentType === 'image' ? (
+                      <img
+                        src={item.contentValue}
+                        alt="Current"
+                        className="max-w-xs max-h-24 rounded object-cover mb-3"
+                      />
+                    ) : (
+                      <p className="text-gray-700 text-sm mb-3 truncate">{item.contentValue}</p>
+                    )}
+                    <input
+                      ref={editFileInputRef}
+                      type="file"
+                      accept={item.contentType === 'image' ? 'image/*' : 'application/pdf'}
+                      onChange={handleEditFileSelect}
+                      className="hidden"
+                      id={`edit-file-${item.id}`}
+                    />
+                    <label
+                      htmlFor={`edit-file-${item.id}`}
+                      className="inline-flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-2 cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors text-sm"
+                    >
+                      {editFile ? (
+                        <span className="text-primary-600">{editFile.name}</span>
+                      ) : (
+                        <span className="text-gray-600">Choose new file to replace</span>
+                      )}
+                    </label>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSaveEdit(item)}
+                    disabled={
+                      updateMutation.isPending ||
+                      isEditUploading ||
+                      ((item.contentType === 'text' || item.contentType === 'youtube') && !editValue.trim()) ||
+                      ((item.contentType === 'image' || item.contentType === 'pdf') && !editFile)
+                    }
+                    className="bg-primary-600 hover:bg-primary-500 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                  >
+                    {isEditUploading ? 'Uploading...' : updateMutation.isPending ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={resetEditForm}
+                    className="text-gray-600 hover:text-gray-800 px-4 py-2 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // View mode
+              <div className="flex items-start gap-4">
+                <span className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500">
+                  {item.displayOrder}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-medium text-gray-400 uppercase">
+                    {item.contentType}
+                  </span>
+                  {item.contentType === 'image' ? (
+                    <div className="mt-2">
+                      <img
+                        src={item.contentValue}
+                        alt="Content preview"
+                        className="max-w-xs max-h-24 rounded object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-gray-700 mt-1 truncate">
+                      {item.contentType === 'text'
+                        ? item.contentValue.slice(0, 100) +
+                          (item.contentValue.length > 100 ? '...' : '')
+                        : item.contentValue}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => startEditing(item)}
+                    className="text-primary-600 hover:text-primary-700 text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Delete this content?')) {
+                        deleteMutation.mutate(item.id)
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
 

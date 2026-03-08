@@ -8,6 +8,7 @@ export interface Comment {
   audienceSessionId: string
   content: string
   aiProcessed: boolean
+  hidden: boolean
   createdAt: string
 }
 
@@ -101,5 +102,26 @@ Be concise. Use plain language.`,
     `
 
     return summary
+  },
+
+  async setHidden(commentId: string, hidden: boolean): Promise<Comment> {
+    const rows = await sql`
+      UPDATE comments SET hidden = ${hidden}
+      WHERE id = ${commentId}
+      RETURNING *
+    `
+    if (rows.length === 0) {
+      throw new Error('Comment not found')
+    }
+    return toCamelCase(rows[0]) as Comment
+  },
+
+  async getVisibleBySegment(segmentId: string) {
+    const rows = await sql`
+      SELECT * FROM comments
+      WHERE segment_id = ${segmentId} AND hidden = false
+      ORDER BY created_at DESC
+    `
+    return rowsToCamelCase(rows as Record<string, unknown>[])
   },
 }

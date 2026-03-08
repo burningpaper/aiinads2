@@ -1,8 +1,27 @@
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useShowStore } from '@/stores/showStore'
 import { Link } from 'react-router-dom'
+import { api } from '@/lib/api'
 
 export function DashboardHome() {
   const { show, segments } = useShowStore()
+  const queryClient = useQueryClient()
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  const resetMutation = useMutation({
+    mutationFn: () => api.post(`/shows/${show?.id}/reset`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['show'] })
+      setShowResetConfirm(false)
+      window.location.reload()
+    },
+  })
+
+  const handleExport = (type: 'votes' | 'comments') => {
+    if (!show?.id) return
+    window.open(`${import.meta.env.VITE_API_URL}/shows/${show.id}/export?type=${type}`, '_blank')
+  }
 
   const liveSegment = segments.find((s) => s.status === 'live')
   const completedCount = segments.filter((s) => s.status === 'complete').length
@@ -37,6 +56,61 @@ export function DashboardHome() {
             {completedCount} / {segments.length}
           </p>
         </div>
+      </div>
+
+      {/* Admin Tools */}
+      <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-8">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900">Admin Tools</h2>
+        </div>
+        <div className="p-6 flex flex-wrap gap-4">
+          <button
+            onClick={() => handleExport('votes')}
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Export Votes (CSV)
+          </button>
+          <button
+            onClick={() => handleExport('comments')}
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Export Comments (CSV)
+          </button>
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            Reset for Rehearsal
+          </button>
+        </div>
+
+        {/* Reset Confirmation Modal */}
+        {showResetConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Reset Show?</h3>
+              <p className="text-gray-600 mb-4">
+                This will delete all votes, comments, and AI summaries. All segments will be reset to draft status.
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => resetMutation.mutate()}
+                  disabled={resetMutation.isPending}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-medium"
+                >
+                  {resetMutation.isPending ? 'Resetting...' : 'Yes, Reset Everything'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Segments Overview */}

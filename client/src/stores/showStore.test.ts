@@ -29,6 +29,7 @@ const mockDecision: Decision = {
   winningOption: null,
   openedAt: null,
   closedAt: null,
+  countdownSeconds: null,
 }
 
 const mockVoteCounts: VoteCounts = {

@@ -37,8 +37,26 @@ app.use(cors({
 app.use(express.json())
 
 // Health check (before auth middleware so it's always accessible)
-app.get('/api/health', (_, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+app.get('/api/health', async (_, res) => {
+  try {
+    // Check database connectivity
+    const { sql } = await import('./lib/db.js')
+    await sql`SELECT 1`
+
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      sockets: io.engine.clientsCount,
+    })
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: (error as Error).message,
+    })
+  }
 })
 
 app.use(ClerkExpressWithAuth())

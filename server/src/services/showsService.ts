@@ -89,4 +89,105 @@ export const showsService = {
       voteCounts,
     }
   },
+
+  async resetForRehearsal(showId: string) {
+    // Verify show exists
+    await this.getById(showId)
+
+    // Delete all votes for this show's decisions
+    await sql`
+      DELETE FROM votes
+      WHERE decision_id IN (
+        SELECT d.id FROM decisions d
+        JOIN segments s ON d.segment_id = s.id
+        WHERE s.show_id = ${showId}
+      )
+    `
+
+    // Delete all comments for this show
+    await sql`DELETE FROM comments WHERE show_id = ${showId}`
+
+    // Delete all AI summaries for this show
+    await sql`DELETE FROM ai_summaries WHERE show_id = ${showId}`
+
+    // Reset all decisions to pending
+    await sql`
+      UPDATE decisions
+      SET status = 'pending', winning_option = NULL, opened_at = NULL, closed_at = NULL
+      WHERE segment_id IN (SELECT id FROM segments WHERE show_id = ${showId})
+    `
+
+    // Reset all segments to draft
+    await sql`
+      UPDATE segments
+      SET status = 'draft', activated_at = NULL, completed_at = NULL
+      WHERE show_id = ${showId}
+    `
+
+    // Reset show to setup
+    await sql`UPDATE shows SET status = 'setup' WHERE id = ${showId}`
+
+    return { success: true, message: 'Show reset for rehearsal' }
+  },
+
+  async exportVotes(showId: string): Promise<string> {
+    const rows = await sql`
+      SELECT
+        s.title as segment_title,
+        d.question,
+        d.option_a,
+        d.option_b,
+        v.choice,
+        v.audience_session_id,
+        v.created_at
+      FROM votes v
+      JOIN decisions d ON v.decision_id = d.id
+      JOIN segments s ON d.segment_id = s.id
+      WHERE s.show_id = ${showId}
+      ORDER BY s.order_index, v.created_at
+    `
+
+    const headers = ['Segment', 'Question', 'Option A', 'Option B', 'Choice', 'Session ID', 'Timestamp']
+    const csvRows = rows.map((r) => [
+      r.segment_title,
+      r.question,
+      r.option_a,
+      r.option_b,
+      r.choice === 'a' ? r.option_a : r.option_b,
+      r.audience_session_id,
+      new Date(r.created_at).toISOString(),
+    ])
+
+    return [headers, ...csvRows].map((row) =>
+      row.map((cell: unknown) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    ).join('\n')
+  },
+
+  async exportComments(showId: string): Promise<string> {
+    const rows = await sql`
+      SELECT
+        s.title as segment_title,
+        c.content,
+        c.audience_session_id,
+        c.hidden,
+        c.created_at
+      FROM comments c
+      LEFT JOIN segments s ON c.segment_id = s.id
+      WHERE c.show_id = ${showId}
+      ORDER BY c.created_at
+    `
+
+    const headers = ['Segment', 'Comment', 'Session ID', 'Hidden', 'Timestamp']
+    const csvRows = rows.map((r) => [
+      r.segment_title || 'General',
+      r.content,
+      r.audience_session_id,
+      r.hidden ? 'Yes' : 'No',
+      new Date(r.created_at).toISOString(),
+    ])
+
+    return [headers, ...csvRows].map((row) =>
+      row.map((cell: unknown) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    ).join('\n')
+  },
 }

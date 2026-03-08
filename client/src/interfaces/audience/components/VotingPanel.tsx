@@ -1,8 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { getSessionId, hasVoted, markVoted } from '@/lib/session'
 import type { Decision, VoteCounts } from '@/types'
+
+function useCountdown(openedAt: string | null, countdownSeconds: number | null) {
+  const [remaining, setRemaining] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!openedAt || !countdownSeconds) {
+      setRemaining(null)
+      return
+    }
+
+    const calculateRemaining = () => {
+      const openedTime = new Date(openedAt).getTime()
+      const now = Date.now()
+      const elapsed = Math.floor((now - openedTime) / 1000)
+      const left = countdownSeconds - elapsed
+      return Math.max(0, left)
+    }
+
+    setRemaining(calculateRemaining())
+
+    const interval = setInterval(() => {
+      const left = calculateRemaining()
+      setRemaining(left)
+      if (left <= 0) {
+        clearInterval(interval)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [openedAt, countdownSeconds])
+
+  return remaining
+}
 
 interface VotingPanelProps {
   decision: Decision
@@ -12,6 +45,7 @@ interface VotingPanelProps {
 export function VotingPanel({ decision, voteCounts }: VotingPanelProps) {
   const [voted, setVoted] = useState(() => hasVoted(decision.id))
   const [selectedChoice, setSelectedChoice] = useState<'a' | 'b' | null>(null)
+  const remaining = useCountdown(decision.openedAt, decision.countdownSeconds)
 
   const voteMutation = useMutation({
     mutationFn: (choice: 'a' | 'b') =>
@@ -20,15 +54,22 @@ export function VotingPanel({ decision, voteCounts }: VotingPanelProps) {
         audienceSessionId: getSessionId(),
         choice,
       }),
-    onSuccess: (_, choice) => {
+    onSuccess: () => {
+      // Already marked optimistically, just persist
       markVoted(decision.id)
-      setVoted(true)
-      setSelectedChoice(choice)
+    },
+    onError: () => {
+      // Revert optimistic update
+      setVoted(false)
+      setSelectedChoice(null)
     },
   })
 
   const handleVote = (choice: 'a' | 'b') => {
     if (voted || voteMutation.isPending) return
+    // Optimistic update - show voted state immediately
+    setVoted(true)
+    setSelectedChoice(choice)
     voteMutation.mutate(choice)
   }
 
@@ -94,12 +135,30 @@ export function VotingPanel({ decision, voteCounts }: VotingPanelProps) {
 
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm animate-fade-in-up">
-        <h3 className="font-serif text-xl text-gray-900 mb-6">{decision.question}</h3>
+        <h3 className="font-serif text-xl text-gray-900 mb-4">{decision.question}</h3>
+
+        {/* Countdown Timer */}
+        {remaining !== null && remaining > 0 && (
+          <div className={`text-center mb-4 ${remaining <= 10 ? 'animate-pulse' : ''}`}>
+            <div className={`text-3xl font-bold tabular-nums ${
+              remaining <= 10 ? 'text-red-500' : 'text-primary-600'
+            }`}>
+              {remaining}s
+            </div>
+            <p className="text-sm text-gray-500">remaining to vote</p>
+          </div>
+        )}
+
+        {remaining === 0 && (
+          <div className="text-center mb-4">
+            <p className="text-red-500 font-medium">Time's up!</p>
+          </div>
+        )}
 
         <div className="space-y-4">
           <button
             onClick={() => handleVote('a')}
-            disabled={voteMutation.isPending}
+            disabled={voteMutation.isPending || remaining === 0}
             className="w-full bg-primary-700 hover:bg-primary-600 disabled:bg-primary-400 text-white py-5 rounded-2xl font-medium text-lg transition-all duration-200 active:scale-[0.98] min-h-[72px]"
           >
             {decision.optionA}
@@ -107,7 +166,7 @@ export function VotingPanel({ decision, voteCounts }: VotingPanelProps) {
 
           <button
             onClick={() => handleVote('b')}
-            disabled={voteMutation.isPending}
+            disabled={voteMutation.isPending || remaining === 0}
             className="w-full bg-purple-600 hover:bg-purple-500 disabled:bg-purple-400 text-white py-5 rounded-2xl font-medium text-lg transition-all duration-200 active:scale-[0.98] min-h-[72px]"
           >
             {decision.optionB}

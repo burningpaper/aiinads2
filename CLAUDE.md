@@ -92,7 +92,7 @@ io.to(`show:${showId}`).emit('decision:opened', decision)
 io.to(`show:${showId}`).emit('vote:counted', { decisionId, counts })
 ```
 
-Key events: `show:updated`, `segment:activated`, `content:changed`, `decision:opened`, `decision:closed`, `vote:counted`, `comment:received`
+Key events: `show:updated`, `show:reset`, `segment:activated`, `content:changed`, `decision:opened`, `decision:closed`, `vote:counted`, `comment:received`, `comment:updated`
 
 ### State Flow
 ```
@@ -143,6 +143,52 @@ OPENAI_API_KEY=sk-...
 - **No PDFs on presentation screen** (not legible at distance)
 - **Clerk middleware:** Protect `/admin` routes, use `getAuth()` for user context
 - **Latency requirement:** All real-time updates must propagate in <500ms
+
+## Admin Features
+
+### Comment Moderation
+- Hide/show comments via toggle in CommentsPanel
+- Hidden comments marked with strikethrough, don't show on presentation
+- `PATCH /api/comments/:id/visibility` with `{ hidden: boolean }`
+
+### Show Reset (Rehearsals)
+- Reset all votes, comments, AI summaries, decisions, segments to initial state
+- `POST /api/shows/:id/reset` (admin only)
+- Useful for running rehearsals without polluting production data
+
+### Data Export
+- Export votes and comments as CSV
+- `GET /api/shows/:id/export?type=votes` or `type=comments`
+- Downloaded directly from admin dashboard
+
+### Voting Countdown Timer
+- Optional countdown when opening voting (30s, 60s, 2min, or no timer)
+- Timer displayed on audience and presentation screens
+- Voting buttons disabled when timer expires
+
+## API Endpoints
+
+### Health Check
+- `GET /api/health` - Returns database status, socket count, timestamp
+
+## UI Features
+
+### QR Code (Presentation)
+- Welcome screen shows QR code for audience to scan
+- Auto-generates based on current URL
+
+### Optimistic Voting
+- Vote button immediately shows "submitted" state
+- Reverts if API call fails
+
+### Error Boundaries
+- React error boundaries wrap each interface
+- Presentation screen has special "Recovering..." fallback
+- Prevents entire app crash from component errors
+
+### Connection Toast
+- Shows "Reconnecting..." when socket disconnects
+- Shows "Reconnected" briefly when connection restored
 
 ## Build Order
 
