@@ -7,6 +7,15 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'aiinads'
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL // e.g., https://pub-xxx.r2.dev
 
+// Log config status on startup
+console.log('R2 Config:', {
+  hasAccountId: !!R2_ACCOUNT_ID,
+  hasAccessKey: !!R2_ACCESS_KEY_ID,
+  hasSecretKey: !!R2_SECRET_ACCESS_KEY,
+  bucketName: R2_BUCKET_NAME,
+  publicUrl: R2_PUBLIC_URL || '(not set)',
+})
+
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY) {
   console.warn('R2 storage not configured - file uploads will fail')
 }

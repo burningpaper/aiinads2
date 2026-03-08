@@ -26,9 +26,12 @@ router.post(
         return
       }
 
+      console.log('Uploading image:', req.file.mimetype, req.file.size, 'bytes')
       const result = await uploadFile(req.file.buffer, req.file.mimetype, 'image')
+      console.log('Upload successful:', result.url)
       res.json(result)
     } catch (error) {
+      console.error('Image upload error:', error)
       next(error)
     }
   }
