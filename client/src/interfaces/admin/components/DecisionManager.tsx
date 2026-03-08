@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { socket } from '@/lib/socket'
 import type { Decision, VoteCounts } from '@/types'
 
 interface DecisionManagerProps {
@@ -16,6 +17,20 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
   const [question, setQuestion] = useState(decision?.question || '')
   const [optionA, setOptionA] = useState(decision?.optionA || '')
   const [optionB, setOptionB] = useState(decision?.optionB || '')
+
+  // Listen for real-time vote updates
+  useEffect(() => {
+    const handleVoteCounted = (counts: VoteCounts) => {
+      if (decision && counts.decisionId === decision.id) {
+        queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
+      }
+    }
+
+    socket.on('vote:counted', handleVoteCounted)
+    return () => {
+      socket.off('vote:counted', handleVoteCounted)
+    }
+  }, [decision?.id, segmentId, queryClient])
 
   const saveMutation = useMutation({
     mutationFn: (data: { question: string; optionA: string; optionB: string }) =>
