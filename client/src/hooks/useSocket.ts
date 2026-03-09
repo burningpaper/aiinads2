@@ -11,6 +11,7 @@ export function useSocket(showId: string | null) {
     setActiveSegment,
     setContent,
     setDecision,
+    setVoteCounts,
     updateDecision,
     updateVoteCounts,
   } = useShowStore()
@@ -34,11 +35,19 @@ export function useSocket(showId: string | null) {
   )
 
   const handleSegmentActivated = useCallback(
-    (segment: Segment) => {
-      updateSegment(segment.id, segment)
-      setActiveSegment(segment)
+    (data: {
+      segment: Segment
+      content: SegmentContent[]
+      decision: Decision | null
+      voteCounts: VoteCounts | null
+    }) => {
+      updateSegment(data.segment.id, data.segment)
+      setActiveSegment(data.segment)
+      setContent(data.content)
+      setDecision(data.decision)
+      setVoteCounts(data.voteCounts)
     },
-    [updateSegment, setActiveSegment]
+    [updateSegment, setActiveSegment, setContent, setDecision, setVoteCounts]
   )
 
   const handleContentChanged = useCallback(

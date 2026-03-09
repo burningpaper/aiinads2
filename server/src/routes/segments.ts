@@ -48,12 +48,16 @@ router.post('/:id/activate', requireAuth, async (req: Request, res: Response, ne
   try {
     const segment = await segmentsService.activate(req.params.id)
 
-    // Get updated content and decision for the activated segment
-    const content = await contentService.getBySegment(segment.id)
+    // Get all data for the activated segment (content, decision, voteCounts)
+    const fullData = await segmentsService.getFullData(segment.id)
 
     const io = req.app.get('io')
-    emitToShow(io, segment.showId, 'segment:activated', segment)
-    emitToShow(io, segment.showId, 'content:changed', content)
+    emitToShow(io, segment.showId, 'segment:activated', {
+      segment,
+      content: fullData.content,
+      decision: fullData.decision,
+      voteCounts: fullData.voteCounts,
+    })
 
     res.json(segment)
   } catch (error) {
