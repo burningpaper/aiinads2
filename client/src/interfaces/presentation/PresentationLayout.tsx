@@ -42,9 +42,9 @@ export function PresentationLayout() {
     return <WelcomeScreen title={show.title} />
   }
 
-  // Show live but no active segment
+  // Show live but no active segment - show welcome with QR code
   if (!activeSegment) {
-    return <HoldingScreen />
+    return <HoldingScreen title={show?.title} />
   }
 
   // Decision is open or just closed - show voting screen

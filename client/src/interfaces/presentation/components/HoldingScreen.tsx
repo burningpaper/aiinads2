@@ -1,19 +1,43 @@
-export function HoldingScreen() {
+interface HoldingScreenProps {
+  title?: string
+}
+
+export function HoldingScreen({ title }: HoldingScreenProps) {
+  // Generate the audience URL (same origin, root path)
+  const audienceUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/`
+    : ''
+
+  // QR code API URL
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(audienceUrl)}`
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 flex items-center justify-center p-16">
       <div className="text-center text-white">
-        <h1 className="font-serif text-6xl mb-6">
-          Panel Discussion
+        <h1 className="font-serif text-8xl mb-8 animate-fade-in-up">
+          Welcome
         </h1>
-        <p className="text-3xl text-primary-300">
-          In Progress
-        </p>
-        <div className="flex justify-center mt-12">
-          <div className="flex gap-2">
-            <span className="w-4 h-4 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-4 h-4 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-4 h-4 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        {title && (
+          <p className="text-4xl text-primary-300 mb-12 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            {title}
+          </p>
+        )}
+
+        {/* QR Code */}
+        <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+          <div className="inline-block bg-white p-6 rounded-2xl shadow-2xl">
+            <img
+              src={qrCodeUrl}
+              alt="Scan to join"
+              className="w-64 h-64"
+            />
           </div>
+          <p className="text-2xl text-primary-300 mt-6">
+            Scan to participate
+          </p>
+          <p className="text-lg text-primary-400 mt-2 font-mono">
+            {audienceUrl}
+          </p>
         </div>
       </div>
     </div>
