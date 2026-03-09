@@ -56,10 +56,11 @@ export function useSocket(showId: string | null) {
   )
 
   const handleDecisionClosed = useCallback(
-    (decision: Decision) => {
-      updateDecision(decision)
+    (data: { decision: Decision; voteCounts: VoteCounts }) => {
+      updateDecision(data.decision)
+      updateVoteCounts(data.voteCounts)
     },
-    [updateDecision]
+    [updateDecision, updateVoteCounts]
   )
 
   const handleVoteCounted = useCallback(
