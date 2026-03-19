@@ -18,6 +18,8 @@ export interface Segment {
   status: SegmentStatus
   activatedAt: string | null
   completedAt: string | null
+  panelTitle: string | null
+  panelParticipants: string | null
 }
 
 export interface SegmentContent {

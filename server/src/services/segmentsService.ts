@@ -9,6 +9,8 @@ export interface Segment {
   status: 'draft' | 'live' | 'complete'
   activatedAt: string | null
   completedAt: string | null
+  panelTitle: string | null
+  panelParticipants: string | null
 }
 
 export const segmentsService = {
@@ -93,13 +95,19 @@ export const segmentsService = {
     }
   },
 
-  async update(segmentId: string, data: { title?: string }): Promise<Segment> {
+  async update(segmentId: string, data: {
+    title?: string
+    panelTitle?: string | null
+    panelParticipants?: string | null
+  }): Promise<Segment> {
     // Verify segment exists
     await this.getById(segmentId)
 
     const rows = await sql`
       UPDATE segments
       SET title = COALESCE(${data.title}, title),
+          panel_title = COALESCE(${data.panelTitle}, panel_title),
+          panel_participants = COALESCE(${data.panelParticipants}, panel_participants),
           updated_at = NOW()
       WHERE id = ${segmentId}
       RETURNING *

@@ -5,6 +5,7 @@ import { useShowStore } from '@/stores/showStore'
 import { api } from '@/lib/api'
 import { ContentManager } from './ContentManager'
 import { DecisionManager } from './DecisionManager'
+import { PanelTitleManager } from './PanelTitleManager'
 import { CommentsPanel } from './CommentsPanel'
 import type { Segment, SegmentContent, Decision, VoteCounts } from '@/types'
 
@@ -181,6 +182,9 @@ export function SegmentPanel() {
           voteCounts={voteCounts}
           isSegmentLive={segment.status === 'live'}
         />
+
+        {/* Panel Title Slide */}
+        <PanelTitleManager segmentId={segment.id} segment={segment} />
       </div>
 
       {/* Comments Sidebar */}

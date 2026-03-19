@@ -2,6 +2,7 @@ import { useShowStore } from '@/stores/showStore'
 import { useShowState } from '@/hooks/useShowState'
 import { PresentationContent } from './components/PresentationContent'
 import { PresentationVoting } from './components/PresentationVoting'
+import { PanelTitleScreen } from './components/PanelTitleScreen'
 import { WelcomeScreen } from './components/WelcomeScreen'
 import { ThankYouScreen } from './components/ThankYouScreen'
 import { HoldingScreen } from './components/HoldingScreen'
@@ -47,8 +48,28 @@ export function PresentationLayout() {
     return <HoldingScreen title={show?.title} />
   }
 
-  // Decision is open or just closed - show voting screen
-  if (decision && (decision.status === 'open' || decision.status === 'closed')) {
+  // Decision is open - show voting screen
+  if (decision && decision.status === 'open') {
+    return (
+      <PresentationVoting
+        decision={decision}
+        voteCounts={voteCounts}
+        isConnected={isConnected}
+      />
+    )
+  }
+
+  // Decision is closed - show panel title screen if configured, otherwise voting results
+  if (decision && decision.status === 'closed') {
+    if (activeSegment.panelTitle) {
+      return (
+        <PanelTitleScreen
+          title={activeSegment.panelTitle}
+          participants={activeSegment.panelParticipants}
+        />
+      )
+    }
+    // No panel title configured, show voting results
     return (
       <PresentationVoting
         decision={decision}
