@@ -111,6 +111,27 @@ export const decisionsService = {
     return toCamelCase(rows[0]) as Decision
   },
 
+  async reopen(id: string, countdownSeconds?: number): Promise<Decision> {
+    const decision = await this.getById(id)
+
+    if (decision.status !== 'closed') {
+      throw new ValidationError('Decision can only be reopened from closed status')
+    }
+
+    const rows = await sql`
+      UPDATE decisions
+      SET status = 'open',
+          opened_at = NOW(),
+          closed_at = NULL,
+          winning_option = NULL,
+          countdown_seconds = ${countdownSeconds ?? null}
+      WHERE id = ${id}
+      RETURNING *
+    `
+
+    return toCamelCase(rows[0]) as Decision
+  },
+
   async getVoteCounts(decisionId: string) {
     const counts = await sql`
       SELECT

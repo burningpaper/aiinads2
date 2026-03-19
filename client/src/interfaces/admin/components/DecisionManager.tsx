@@ -15,6 +15,7 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
   const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
   const [showOpenOptions, setShowOpenOptions] = useState(false)
+  const [showReopenOptions, setShowReopenOptions] = useState(false)
   const [question, setQuestion] = useState(decision?.question || '')
   const [optionA, setOptionA] = useState(decision?.optionA || '')
   const [optionB, setOptionB] = useState(decision?.optionB || '')
@@ -60,6 +61,15 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
     },
   })
 
+  const reopenMutation = useMutation({
+    mutationFn: (countdown?: number | null) =>
+      api.post(`/decisions/${decision!.id}/reopen`, { countdownSeconds: countdown }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
+      setShowReopenOptions(false)
+    },
+  })
+
   const handleSave = () => {
     if (!question.trim() || !optionA.trim() || !optionB.trim()) return
     saveMutation.mutate({
@@ -74,9 +84,13 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
   }
 
   const handleClose = () => {
-    if (confirm('Close voting? This cannot be undone.')) {
+    if (confirm('Close voting?')) {
       closeMutation.mutate()
     }
+  }
+
+  const handleReopenWithCountdown = (seconds: number | null) => {
+    reopenMutation.mutate(seconds)
   }
 
   const total = voteCounts?.total || 0
@@ -231,11 +245,63 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
               </button>
             )}
 
-            {decision!.status === 'closed' && (
-              <div className="text-center py-2">
-                <span className="text-green-600 font-medium">
-                  Winner: {decision!.winningOption === 'a' ? decision!.optionA : decision!.optionB}
-                </span>
+            {decision!.status === 'closed' && !showReopenOptions && (
+              <div className="space-y-4">
+                <div className="text-center py-2">
+                  <span className="text-green-600 font-medium">
+                    Winner: {decision!.winningOption === 'a' ? decision!.optionA : decision!.optionB}
+                  </span>
+                </div>
+                {isSegmentLive && (
+                  <button
+                    onClick={() => setShowReopenOptions(true)}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-medium"
+                  >
+                    Reopen Voting
+                  </button>
+                )}
+              </div>
+            )}
+
+            {decision!.status === 'closed' && showReopenOptions && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 font-medium">Reopen voting with duration:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleReopenWithCountdown(30)}
+                    disabled={reopenMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    30 seconds
+                  </button>
+                  <button
+                    onClick={() => handleReopenWithCountdown(60)}
+                    disabled={reopenMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    1 minute
+                  </button>
+                  <button
+                    onClick={() => handleReopenWithCountdown(120)}
+                    disabled={reopenMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    2 minutes
+                  </button>
+                  <button
+                    onClick={() => handleReopenWithCountdown(null)}
+                    disabled={reopenMutation.isPending}
+                    className="bg-gray-600 hover:bg-gray-500 text-white py-2 rounded-lg text-sm font-medium"
+                  >
+                    No timer
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowReopenOptions(false)}
+                  className="w-full text-gray-500 hover:text-gray-700 py-2 text-sm"
+                >
+                  Cancel
+                </button>
               </div>
             )}
           </div>

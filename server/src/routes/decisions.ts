@@ -63,4 +63,22 @@ router.post('/:id/close', requireAuth, async (req: Request, res: Response, next:
   }
 })
 
+// Reopen decision for voting (admin only)
+router.post('/:id/reopen', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { countdownSeconds } = req.body
+    const decision = await decisionsService.reopen(req.params.id, countdownSeconds)
+
+    // Get segment for showId
+    const segment = await segmentsService.getById(decision.segmentId)
+
+    const io = req.app.get('io')
+    emitToShow(io, segment.showId, 'decision:opened', decision)
+
+    res.json(decision)
+  } catch (error) {
+    next(error)
+  }
+})
+
 export { router as decisionsRouter }
