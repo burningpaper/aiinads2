@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useShowStore } from '@/stores/showStore'
 import { useShowState } from '@/hooks/useShowState'
 import { PresentationContent } from './components/PresentationContent'
@@ -16,6 +16,15 @@ const RESULTS_DISPLAY_DURATION = 120 // 2 minutes
 // Hook to track if results display period has ended
 function useResultsTimerExpired(closedAt: string | null): boolean {
   const [expired, setExpired] = useState(false)
+  const closedAtRef = useRef(closedAt)
+
+  // Reset expired state when closedAt changes (new voting session closed)
+  useEffect(() => {
+    if (closedAt !== closedAtRef.current) {
+      closedAtRef.current = closedAt
+      setExpired(false)
+    }
+  }, [closedAt])
 
   useEffect(() => {
     if (!closedAt) {
@@ -23,24 +32,32 @@ function useResultsTimerExpired(closedAt: string | null): boolean {
       return
     }
 
-    const closedTime = new Date(closedAt).getTime()
-    const now = Date.now()
-    const elapsed = Math.floor((now - closedTime) / 1000)
+    // Check immediately and then every second
+    const checkExpired = () => {
+      const closedTime = new Date(closedAt).getTime()
+      const now = Date.now()
+      const elapsed = Math.floor((now - closedTime) / 1000)
 
-    // If already past the duration, mark as expired
-    if (elapsed >= RESULTS_DISPLAY_DURATION) {
-      setExpired(true)
+      if (elapsed >= RESULTS_DISPLAY_DURATION) {
+        setExpired(true)
+        return true // Signal to stop interval
+      }
+      return false
+    }
+
+    // Check immediately
+    if (checkExpired()) {
       return
     }
 
-    // Otherwise, set a timer to expire at the right time
-    setExpired(false)
-    const remainingMs = (RESULTS_DISPLAY_DURATION - elapsed) * 1000
-    const timer = setTimeout(() => {
-      setExpired(true)
-    }, remainingMs)
+    // Check every second until expired
+    const interval = setInterval(() => {
+      if (checkExpired()) {
+        clearInterval(interval)
+      }
+    }, 1000)
 
-    return () => clearTimeout(timer)
+    return () => clearInterval(interval)
   }, [closedAt])
 
   return expired
