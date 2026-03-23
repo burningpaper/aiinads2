@@ -65,9 +65,14 @@ export function PresentationLayout() {
   const { isLoading, error } = useLiveShowState()
   const { show, activeSegment, content, decision, voteCounts, isConnected } = useShowStore()
 
+  // Only consider decision if it belongs to the current active segment
+  const currentDecision = decision && activeSegment && decision.segmentId === activeSegment.id
+    ? decision
+    : null
+
   // Track if the 2-minute results display period has expired
   const resultsTimerExpired = useResultsTimerExpired(
-    decision?.status === 'closed' ? decision.closedAt : null
+    currentDecision?.status === 'closed' ? currentDecision.closedAt : null
   )
 
   // Full-screen error recovery
@@ -118,24 +123,24 @@ export function PresentationLayout() {
   }
 
   // Decision is open - show voting screen
-  if (decision && decision.status === 'open') {
+  if (currentDecision && currentDecision.status === 'open') {
     return (
       <PresentationVoting
-        decision={decision}
+        decision={currentDecision}
         voteCounts={voteCounts}
         isConnected={isConnected}
       />
     )
   }
 
-  // Decision is closed
-  if (decision && decision.status === 'closed') {
+  // Decision is closed (and belongs to current segment)
+  if (currentDecision && currentDecision.status === 'closed') {
     // Show voting results for 2 minutes, then panel title (if configured)
     if (!resultsTimerExpired) {
       // Still within the 2-minute window - show voting results
       return (
         <PresentationVoting
-          decision={decision}
+          decision={currentDecision}
           voteCounts={voteCounts}
           isConnected={isConnected}
         />
@@ -155,7 +160,7 @@ export function PresentationLayout() {
     // No panel title configured, keep showing voting results
     return (
       <PresentationVoting
-        decision={decision}
+        decision={currentDecision}
         voteCounts={voteCounts}
         isConnected={isConnected}
       />
