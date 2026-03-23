@@ -15,6 +15,14 @@ export const showsService = {
     return rowsToCamelCase(rows) as Show[]
   },
 
+  async getLive(): Promise<Show | null> {
+    const rows = await sql`SELECT * FROM shows WHERE status = 'live' LIMIT 1`
+    if (rows.length === 0) {
+      return null
+    }
+    return toCamelCase(rows[0]) as Show
+  },
+
   async create(title: string): Promise<Show> {
     // Create the show
     const showRows = await sql`

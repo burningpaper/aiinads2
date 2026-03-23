@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useShowStore } from '@/stores/showStore'
-import { useShowState } from '@/hooks/useShowState'
+import { useLiveShowState } from '@/hooks/useLiveShowState'
 import { PresentationContent } from './components/PresentationContent'
 import { PresentationVoting } from './components/PresentationVoting'
 import { PanelTitleScreen } from './components/PanelTitleScreen'
 import { WelcomeScreen } from './components/WelcomeScreen'
 import { ThankYouScreen } from './components/ThankYouScreen'
 import { HoldingScreen } from './components/HoldingScreen'
-
-const DEFAULT_SHOW_ID = import.meta.env.VITE_DEFAULT_SHOW_ID || '00000000-0000-0000-0000-000000000001'
 
 // How long to show voting results before switching to panel title (in seconds)
 const RESULTS_DISPLAY_DURATION = 120 // 2 minutes
@@ -64,7 +62,7 @@ function useResultsTimerExpired(closedAt: string | null): boolean {
 }
 
 export function PresentationLayout() {
-  const { isLoading, error } = useShowState(DEFAULT_SHOW_ID)
+  const { isLoading, error } = useLiveShowState()
   const { show, activeSegment, content, decision, voteCounts, isConnected } = useShowStore()
 
   // Track if the 2-minute results display period has expired
@@ -92,19 +90,31 @@ export function PresentationLayout() {
     )
   }
 
+  // No show is currently live
+  if (!show) {
+    return (
+      <div className="min-h-screen bg-primary-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <h1 className="font-serif text-6xl mb-4">Waiting for show...</h1>
+          <p className="text-primary-300 text-2xl">The presentation will begin shortly</p>
+        </div>
+      </div>
+    )
+  }
+
   // Show closed
-  if (show?.status === 'closed') {
+  if (show.status === 'closed') {
     return <ThankYouScreen title={show.title} />
   }
 
   // Show not started
-  if (show?.status === 'setup') {
+  if (show.status === 'setup') {
     return <WelcomeScreen title={show.title} />
   }
 
   // Show live but no active segment - show welcome with QR code
   if (!activeSegment) {
-    return <HoldingScreen title={show?.title} />
+    return <HoldingScreen title={show.title} />
   }
 
   // Decision is open - show voting screen

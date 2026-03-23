@@ -31,6 +31,21 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
   }
 })
 
+// Get currently live show state (public - for presentation view)
+router.get('/live/state', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const liveShow = await showsService.getLive()
+    if (!liveShow) {
+      res.json({ show: null, segments: [], activeSegment: null, content: [], decision: null, voteCounts: null })
+      return
+    }
+    const state = await showsService.getFullState(liveShow.id)
+    res.json(state)
+  } catch (error) {
+    next(error)
+  }
+})
+
 // Get show state (public)
 router.get('/:id/state', async (req: Request, res: Response, next: NextFunction) => {
   try {
