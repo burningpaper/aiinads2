@@ -11,6 +11,10 @@ export function PresentationContent({ segment, content, isConnected }: Presentat
     .filter((c) => c.contentType !== 'pdf') // No PDFs on presentation
     .sort((a, b) => a.displayOrder - b.displayOrder)
 
+  // Content-aware layout: single item = full width, multiple = 2-column grid
+  // YouTube always gets full width regardless
+  const useGridLayout = sortedContent.length > 1
+
   return (
     <div className="h-screen overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white p-16 flex flex-col">
       {/* Connection indicator */}
@@ -29,11 +33,19 @@ export function PresentationContent({ segment, content, isConnected }: Presentat
       {/* Content - fills remaining space with fade on overflow */}
       <main className="flex-1 min-h-0 relative">
         <div className="h-full overflow-hidden">
-          <div className="grid grid-cols-2 gap-12 h-full">
-            {sortedContent.map((item) => (
-              <ContentBlock key={item.id} item={item} />
-            ))}
-          </div>
+          {useGridLayout ? (
+            <div className="grid grid-cols-2 gap-12 h-full">
+              {sortedContent.map((item) => (
+                <ContentBlock key={item.id} item={item} fullWidth={false} />
+              ))}
+            </div>
+          ) : (
+            <div className="h-full">
+              {sortedContent.map((item) => (
+                <ContentBlock key={item.id} item={item} fullWidth={true} />
+              ))}
+            </div>
+          )}
         </div>
         {/* Fade overlay at bottom for overflow indication */}
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-primary-900/90 to-transparent pointer-events-none" />
@@ -42,13 +54,13 @@ export function PresentationContent({ segment, content, isConnected }: Presentat
   )
 }
 
-function ContentBlock({ item }: { item: SegmentContent }) {
+function ContentBlock({ item, fullWidth }: { item: SegmentContent; fullWidth: boolean }) {
   switch (item.contentType) {
     case 'text':
       return (
-        <div className="animate-fade-in-up">
+        <div className={`animate-fade-in-up ${fullWidth ? 'col-span-2' : ''}`}>
           <div
-            className="text-3xl leading-relaxed text-primary-100"
+            className={`leading-relaxed text-primary-100 ${fullWidth ? 'text-4xl max-w-4xl' : 'text-3xl'}`}
             dangerouslySetInnerHTML={{ __html: formatPresentationText(item.contentValue) }}
           />
         </div>
@@ -56,19 +68,20 @@ function ContentBlock({ item }: { item: SegmentContent }) {
 
     case 'image':
       return (
-        <div className="animate-fade-in-up h-full flex items-start">
+        <div className={`animate-fade-in-up h-full flex ${fullWidth ? 'items-center justify-center col-span-2' : 'items-start'}`}>
           <img
             src={item.contentValue}
             alt=""
-            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+            className={`object-contain rounded-2xl shadow-2xl ${fullWidth ? 'max-h-full' : 'max-w-full max-h-full'}`}
           />
         </div>
       )
 
     case 'youtube':
+      // YouTube always full width
       return (
         <div className="animate-fade-in-up col-span-2">
-          <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl">
+          <div className="aspect-video rounded-2xl overflow-hidden shadow-2xl max-h-[70vh]">
             <iframe
               src={getYouTubeEmbedUrl(item.contentValue)}
               className="w-full h-full"
