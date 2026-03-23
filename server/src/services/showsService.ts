@@ -57,6 +57,11 @@ export const showsService = {
       return this.getById(id)
     }
 
+    // Only one show can be live at a time - close all other live shows
+    if (data.status === 'live') {
+      await sql`UPDATE shows SET status = 'closed' WHERE status = 'live' AND id != ${id}`
+    }
+
     const rows = await sql`
       UPDATE shows
       SET title = COALESCE(${data.title}, title),

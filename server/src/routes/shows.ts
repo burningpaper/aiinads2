@@ -54,11 +54,25 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // Update show (admin only)
 router.patch('/:id', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const io = req.app.get('io')
+
+    // If setting this show to live, find other live shows to notify after update
+    let previouslyLiveShows: { id: string }[] = []
+    if (req.body.status === 'live') {
+      const allShows = await showsService.list()
+      previouslyLiveShows = allShows.filter(s => s.status === 'live' && s.id !== req.params.id)
+    }
+
     const show = await showsService.update(req.params.id, req.body)
 
-    // Emit update to all clients
-    const io = req.app.get('io')
+    // Emit update to the updated show's clients
     emitToShow(io, show.id, 'show:updated', show)
+
+    // Notify clients of shows that were auto-closed
+    for (const closedShow of previouslyLiveShows) {
+      const updatedClosedShow = await showsService.getById(closedShow.id)
+      emitToShow(io, closedShow.id, 'show:updated', updatedClosedShow)
+    }
 
     res.json(show)
   } catch (error) {
