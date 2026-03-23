@@ -12,7 +12,7 @@ export function PresentationContent({ segment, content, isConnected }: Presentat
     .sort((a, b) => a.displayOrder - b.displayOrder)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white p-16">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white p-16 flex flex-col">
       {/* Connection indicator */}
       {!isConnected && (
         <div className="fixed top-4 right-4 bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-full text-lg animate-pulse">
@@ -21,16 +21,22 @@ export function PresentationContent({ segment, content, isConnected }: Presentat
       )}
 
       {/* Header */}
-      <header className="mb-16">
+      <header className="flex-shrink-0 mb-12">
         <p className="text-2xl text-primary-400 mb-2">Segment {segment.orderIndex}</p>
         <h1 className="font-serif text-7xl">{segment.title}</h1>
       </header>
 
-      {/* Content */}
-      <main className="grid grid-cols-2 gap-16">
-        {sortedContent.map((item) => (
-          <ContentBlock key={item.id} item={item} />
-        ))}
+      {/* Content - fills remaining space with fade on overflow */}
+      <main className="flex-1 min-h-0 relative">
+        <div className="h-full overflow-hidden">
+          <div className="grid grid-cols-2 gap-12 h-full">
+            {sortedContent.map((item) => (
+              <ContentBlock key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+        {/* Fade overlay at bottom for overflow indication */}
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-primary-900/90 to-transparent pointer-events-none" />
       </main>
     </div>
   )
@@ -50,11 +56,11 @@ function ContentBlock({ item }: { item: SegmentContent }) {
 
     case 'image':
       return (
-        <div className="animate-fade-in-up">
+        <div className="animate-fade-in-up h-full flex items-start">
           <img
             src={item.contentValue}
             alt=""
-            className="w-full h-auto rounded-2xl shadow-2xl"
+            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
           />
         </div>
       )

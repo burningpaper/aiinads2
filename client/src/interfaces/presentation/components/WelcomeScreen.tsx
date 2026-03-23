@@ -12,7 +12,7 @@ export function WelcomeScreen({ title }: WelcomeScreenProps) {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(audienceUrl)}`
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 flex items-center justify-center p-16">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 flex items-center justify-center p-16">
       <div className="text-center text-white">
         <h1 className="font-serif text-8xl mb-8 animate-fade-in-up">
           Welcome

@@ -62,7 +62,7 @@ export function PresentationVoting({ decision, voteCounts, isConnected }: Presen
   const isExpired = remaining !== null && remaining <= 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white flex flex-col items-center justify-center p-16">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white flex flex-col items-center justify-center p-16">
       {/* Connection indicator */}
       {!isConnected && (
         <div className="fixed top-4 right-4 bg-yellow-500/20 text-yellow-300 px-4 py-2 rounded-full text-lg animate-pulse">

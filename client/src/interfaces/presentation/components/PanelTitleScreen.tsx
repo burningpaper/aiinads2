@@ -13,7 +13,7 @@ export function PanelTitleScreen({ title, participants }: PanelTitleScreenProps)
     : []
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 flex items-center justify-center p-16">
+    <div className="h-screen overflow-hidden bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 flex items-center justify-center p-16">
       <div className="text-center text-white max-w-5xl">
         {/* Panel Title */}
         <h1 className="font-serif text-7xl mb-12 animate-fade-in-up leading-tight">
