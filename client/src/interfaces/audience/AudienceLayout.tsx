@@ -1,5 +1,5 @@
 import { useShowStore } from '@/stores/showStore'
-import { useShowState } from '@/hooks/useShowState'
+import { useLiveShowState } from '@/hooks/useLiveShowState'
 import { AudienceHeader } from './components/AudienceHeader'
 import { ContentRenderer } from './components/ContentRenderer'
 import { VotingPanel } from './components/VotingPanel'
@@ -7,10 +7,8 @@ import { CommentInput } from './components/CommentInput'
 import { HoldingScreen } from './components/HoldingScreen'
 import { MiniSite } from './components/MiniSite'
 
-const DEFAULT_SHOW_ID = import.meta.env.VITE_DEFAULT_SHOW_ID || '00000000-0000-0000-0000-000000000001'
-
 export function AudienceLayout() {
-  const { isLoading, error } = useShowState(DEFAULT_SHOW_ID)
+  const { isLoading, error } = useLiveShowState()
   const { show, activeSegment, content, decision, voteCounts } = useShowStore()
 
   if (isLoading) {
