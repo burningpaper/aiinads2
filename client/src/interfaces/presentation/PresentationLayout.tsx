@@ -9,7 +9,7 @@ import { ThankYouScreen } from './components/ThankYouScreen'
 import { HoldingScreen } from './components/HoldingScreen'
 
 // How long to show voting results before switching to panel title (in seconds)
-const RESULTS_DISPLAY_DURATION = 120 // 2 minutes
+const RESULTS_DISPLAY_DURATION = 20
 
 // Hook to track if results display period has ended
 function useResultsTimerExpired(closedAt: string | null): boolean {
