@@ -18,12 +18,15 @@ import { setupSocketHandlers } from './socket.js'
 const app = express()
 const httpServer = createServer(app)
 
-// Socket.io setup
+// Socket.io setup with increased timeouts for mobile stability
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
     methods: ['GET', 'POST'],
   },
+  pingTimeout: 60000, // 60 seconds (default is 20s)
+  pingInterval: 25000, // 25 seconds
+  transports: ['websocket', 'polling'], // Prefer websocket
 })
 
 // Make io available to routes
