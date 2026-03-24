@@ -47,8 +47,8 @@ export function PresentationContent({ segment, content, isConnected }: Presentat
             </div>
           )}
         </div>
-        {/* Fade overlay at bottom for overflow indication */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-primary-900/90 to-transparent pointer-events-none" />
+        {/* Fade overlay at bottom for overflow indication - fixed to viewport bottom */}
+        <div className="fixed bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-primary-900 to-transparent pointer-events-none" />
       </main>
     </div>
   )
