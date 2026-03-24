@@ -47,6 +47,12 @@ export function VotingPanel({ decision, voteCounts }: VotingPanelProps) {
   const [selectedChoice, setSelectedChoice] = useState<'a' | 'b' | null>(null)
   const remaining = useCountdown(decision.openedAt, decision.countdownSeconds)
 
+  // Reset voted state when decision changes (new segment)
+  useEffect(() => {
+    setVoted(hasVoted(decision.id))
+    setSelectedChoice(null)
+  }, [decision.id])
+
   const voteMutation = useMutation({
     mutationFn: (choice: 'a' | 'b') =>
       api.post('/votes', {
