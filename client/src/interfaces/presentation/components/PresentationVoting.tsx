@@ -51,8 +51,8 @@ function formatTime(seconds: number): string {
 
 export function PresentationVoting({ decision, voteCounts, isConnected }: PresentationVotingProps) {
   const total = voteCounts?.total || 0
-  const percentA = total > 0 ? Math.round((voteCounts!.optionA / total) * 100) : 50
-  const percentB = total > 0 ? Math.round((voteCounts!.optionB / total) * 100) : 50
+  const percentA = total > 0 ? Math.round((voteCounts!.optionA / total) * 100) : 0
+  const percentB = total > 0 ? Math.round((voteCounts!.optionB / total) * 100) : 0
 
   const isClosed = decision.status === 'closed'
   const winnerA = decision.winningOption === 'a'

@@ -80,8 +80,8 @@ export function VotingPanel({ decision, voteCounts }: VotingPanelProps) {
   }
 
   const total = voteCounts?.total || 0
-  const percentA = total > 0 ? Math.round((voteCounts!.optionA / total) * 100) : 50
-  const percentB = total > 0 ? Math.round((voteCounts!.optionB / total) * 100) : 50
+  const percentA = total > 0 ? Math.round((voteCounts!.optionA / total) * 100) : 0
+  const percentB = total > 0 ? Math.round((voteCounts!.optionB / total) * 100) : 0
 
   // Decision is closed - show results
   if (decision.status === 'closed') {
