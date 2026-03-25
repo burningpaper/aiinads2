@@ -122,22 +122,20 @@ export function PresentationLayout() {
     return <HoldingScreen title={show.title} />
   }
 
-  // Decision is open - show voting screen
-  if (currentDecision && currentDecision.status === 'open') {
+  // Title Only mode - immediately show panel title screen
+  if (activeSegment.titleOnly) {
     return (
-      <PresentationVoting
-        decision={currentDecision}
-        voteCounts={voteCounts}
-        isConnected={isConnected}
+      <PanelTitleScreen
+        title={activeSegment.panelTitle || activeSegment.title}
+        participants={activeSegment.panelParticipants}
       />
     )
   }
 
-  // Decision is closed (and belongs to current segment)
-  if (currentDecision && currentDecision.status === 'closed') {
-    // Show voting results for 2 minutes, then panel title (if configured)
-    if (!resultsTimerExpired) {
-      // Still within the 2-minute window - show voting results
+  // Only handle voting if decisions are enabled for this segment
+  if (activeSegment.decisionEnabled) {
+    // Decision is open - show voting screen
+    if (currentDecision && currentDecision.status === 'open') {
       return (
         <PresentationVoting
           decision={currentDecision}
@@ -147,27 +145,42 @@ export function PresentationLayout() {
       )
     }
 
-    // Timer expired - show panel title if configured
-    if (activeSegment.panelTitle) {
+    // Decision is closed (and belongs to current segment)
+    if (currentDecision && currentDecision.status === 'closed') {
+      // Show voting results for 20 seconds, then panel title (if configured)
+      if (!resultsTimerExpired) {
+        // Still within the results window - show voting results
+        return (
+          <PresentationVoting
+            decision={currentDecision}
+            voteCounts={voteCounts}
+            isConnected={isConnected}
+          />
+        )
+      }
+
+      // Timer expired - show panel title if configured
+      if (activeSegment.panelTitle) {
+        return (
+          <PanelTitleScreen
+            title={activeSegment.panelTitle}
+            participants={activeSegment.panelParticipants}
+          />
+        )
+      }
+
+      // No panel title configured, keep showing voting results
       return (
-        <PanelTitleScreen
-          title={activeSegment.panelTitle}
-          participants={activeSegment.panelParticipants}
+        <PresentationVoting
+          decision={currentDecision}
+          voteCounts={voteCounts}
+          isConnected={isConnected}
         />
       )
     }
-
-    // No panel title configured, keep showing voting results
-    return (
-      <PresentationVoting
-        decision={currentDecision}
-        voteCounts={voteCounts}
-        isConnected={isConnected}
-      />
-    )
   }
 
-  // Normal content view
+  // Normal content view (or decisions disabled)
   return (
     <PresentationContent
       segment={activeSegment}

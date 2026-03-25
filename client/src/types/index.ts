@@ -20,6 +20,8 @@ export interface Segment {
   completedAt: string | null
   panelTitle: string | null
   panelParticipants: string | null
+  decisionEnabled: boolean
+  titleOnly: boolean
 }
 
 export interface SegmentContent {

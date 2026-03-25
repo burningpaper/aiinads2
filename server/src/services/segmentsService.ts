@@ -11,6 +11,8 @@ export interface Segment {
   completedAt: string | null
   panelTitle: string | null
   panelParticipants: string | null
+  decisionEnabled: boolean
+  titleOnly: boolean
 }
 
 export const segmentsService = {
@@ -99,6 +101,8 @@ export const segmentsService = {
     title?: string
     panelTitle?: string | null
     panelParticipants?: string | null
+    decisionEnabled?: boolean
+    titleOnly?: boolean
   }): Promise<Segment> {
     // Verify segment exists
     await this.getById(segmentId)
@@ -108,6 +112,8 @@ export const segmentsService = {
       SET title = COALESCE(${data.title}, title),
           panel_title = COALESCE(${data.panelTitle}, panel_title),
           panel_participants = COALESCE(${data.panelParticipants}, panel_participants),
+          decision_enabled = COALESCE(${data.decisionEnabled}, decision_enabled),
+          title_only = COALESCE(${data.titleOnly}, title_only),
           updated_at = NOW()
       WHERE id = ${segmentId}
       RETURNING *

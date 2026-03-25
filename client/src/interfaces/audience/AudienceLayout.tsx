@@ -40,6 +40,26 @@ export function AudienceLayout() {
     return <HoldingScreen />
   }
 
+  // Title Only mode - show a simple title view (panel discussion in progress)
+  if (activeSegment.titleOnly) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <AudienceHeader segment={activeSegment} />
+
+        <main className="px-4 py-6 space-y-6 max-w-lg mx-auto">
+          <div className="bg-white rounded-2xl p-6 shadow-sm text-center">
+            <h2 className="font-serif text-xl text-gray-900 mb-2">
+              {activeSegment.panelTitle || activeSegment.title}
+            </h2>
+            <p className="text-gray-500">Panel discussion in progress</p>
+          </div>
+        </main>
+
+        {show?.status === 'live' && <CommentInput showId={show.id} segmentId={activeSegment.id} />}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <AudienceHeader segment={activeSegment} />
@@ -47,7 +67,8 @@ export function AudienceLayout() {
       <main className="px-4 py-6 space-y-6 max-w-lg mx-auto">
         <ContentRenderer content={content} />
 
-        {decision && decision.status !== 'pending' && (
+        {/* Only show voting if decisions are enabled for this segment */}
+        {activeSegment.decisionEnabled && decision && decision.status !== 'pending' && (
           <VotingPanel decision={decision} voteCounts={voteCounts} />
         )}
       </main>

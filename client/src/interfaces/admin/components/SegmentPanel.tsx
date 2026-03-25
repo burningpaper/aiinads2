@@ -52,6 +52,15 @@ export function SegmentPanel() {
     },
   })
 
+  const updateModeMutation = useMutation({
+    mutationFn: (data: { titleOnly?: boolean; decisionEnabled?: boolean }) =>
+      api.patch(`/segments/${segmentId}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
+      queryClient.invalidateQueries({ queryKey: ['show'] })
+    },
+  })
+
   const handleActivate = () => {
     const currentLive = segments.find((s) => s.status === 'live')
     let message: string
@@ -170,18 +179,58 @@ export function SegmentPanel() {
               This segment is live
             </p>
           )}
+
+          {/* Segment Mode Options */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-sm font-medium text-gray-700 mb-3">Segment Display Mode</p>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={segment.titleOnly}
+                  onChange={(e) => updateModeMutation.mutate({ titleOnly: e.target.checked })}
+                  disabled={updateModeMutation.isPending}
+                  className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <div>
+                  <span className="text-gray-900 font-medium">Title Only</span>
+                  <p className="text-sm text-gray-500">Show panel title slide immediately (no content or voting)</p>
+                </div>
+              </label>
+
+              {!segment.titleOnly && (
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={segment.decisionEnabled}
+                    onChange={(e) => updateModeMutation.mutate({ decisionEnabled: e.target.checked })}
+                    disabled={updateModeMutation.isPending}
+                    className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <div>
+                    <span className="text-gray-900 font-medium">Enable Voting</span>
+                    <p className="text-sm text-gray-500">Allow audience to vote on a decision for this segment</p>
+                  </div>
+                </label>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Content Manager */}
-        <ContentManager segmentId={segment.id} content={content} />
+        {/* Content Manager - hidden if title only */}
+        {!segment.titleOnly && (
+          <ContentManager segmentId={segment.id} content={content} />
+        )}
 
-        {/* Decision Manager */}
-        <DecisionManager
-          segmentId={segment.id}
-          decision={decision}
-          voteCounts={voteCounts}
-          isSegmentLive={segment.status === 'live'}
-        />
+        {/* Decision Manager - hidden if title only or decisions disabled */}
+        {!segment.titleOnly && segment.decisionEnabled && (
+          <DecisionManager
+            segmentId={segment.id}
+            decision={decision}
+            voteCounts={voteCounts}
+            isSegmentLive={segment.status === 'live'}
+          />
+        )}
 
         {/* Panel Title Slide */}
         <PanelTitleManager segmentId={segment.id} segment={segment} />

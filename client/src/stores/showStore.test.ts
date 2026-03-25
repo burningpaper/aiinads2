@@ -19,6 +19,8 @@ const mockSegment: Segment = {
   completedAt: null,
   panelTitle: null,
   panelParticipants: null,
+  decisionEnabled: true,
+  titleOnly: false,
 }
 
 const mockDecision: Decision = {
