@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useShowStore } from '@/stores/showStore'
 import { socket } from '@/lib/socket'
+import { clearVotedState } from '@/lib/session'
 import type { ShowState, Show, Segment, SegmentContent, Decision, VoteCounts } from '@/types'
 
 // Poll interval to check for live show changes (5 seconds)
@@ -40,6 +41,8 @@ export function useLiveShowState() {
   )
 
   const handleShowReset = useCallback(() => {
+    // Clear client-side voting state so users can vote again
+    clearVotedState()
     queryClient.invalidateQueries({ queryKey: ['live-show'] })
   }, [queryClient])
 

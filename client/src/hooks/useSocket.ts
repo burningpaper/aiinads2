@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { socket, connectSocket, joinShowRoom, leaveShowRoom } from '@/lib/socket'
 import { useShowStore } from '@/stores/showStore'
+import { clearVotedState } from '@/lib/session'
 import type { Show, Segment, Decision, VoteCounts, SegmentContent } from '@/types'
 
 export function useSocket(showId: string | null) {
@@ -79,12 +80,20 @@ export function useSocket(showId: string | null) {
     [updateVoteCounts]
   )
 
+  const handleShowReset = useCallback(() => {
+    // Clear client-side voting state so users can vote again after reset
+    clearVotedState()
+    // Force reload to get fresh state
+    window.location.reload()
+  }, [])
+
   useEffect(() => {
     connectSocket()
 
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
     socket.on('show:updated', handleShowUpdated)
+    socket.on('show:reset', handleShowReset)
     socket.on('segment:activated', handleSegmentActivated)
     socket.on('content:changed', handleContentChanged)
     socket.on('decision:opened', handleDecisionOpened)
@@ -95,6 +104,7 @@ export function useSocket(showId: string | null) {
       socket.off('connect', handleConnect)
       socket.off('disconnect', handleDisconnect)
       socket.off('show:updated', handleShowUpdated)
+      socket.off('show:reset', handleShowReset)
       socket.off('segment:activated', handleSegmentActivated)
       socket.off('content:changed', handleContentChanged)
       socket.off('decision:opened', handleDecisionOpened)
@@ -110,6 +120,7 @@ export function useSocket(showId: string | null) {
     handleConnect,
     handleDisconnect,
     handleShowUpdated,
+    handleShowReset,
     handleSegmentActivated,
     handleContentChanged,
     handleDecisionOpened,
