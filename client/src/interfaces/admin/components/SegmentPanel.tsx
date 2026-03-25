@@ -19,7 +19,7 @@ interface SegmentData {
 export function SegmentPanel() {
   const { segmentId } = useParams<{ segmentId: string }>()
   const queryClient = useQueryClient()
-  const { show, segments } = useShowStore()
+  const { show } = useShowStore()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editedTitle, setEditedTitle] = useState('')
 
