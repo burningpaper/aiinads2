@@ -59,6 +59,10 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['segment', segmentId] })
     },
+    onError: (error) => {
+      console.error('Failed to close voting:', error)
+      alert('Failed to close voting. Check console for details.')
+    },
   })
 
   const reopenMutation = useMutation({
@@ -84,8 +88,12 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
   }
 
   const handleClose = () => {
+    console.log('handleClose called, decision:', decision?.id, 'status:', decision?.status)
     if (confirm('Close voting?')) {
+      console.log('User confirmed, calling closeMutation.mutate()')
       closeMutation.mutate()
+    } else {
+      console.log('User cancelled close voting')
     }
   }
 
