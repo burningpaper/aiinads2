@@ -23,6 +23,9 @@ interface ShowStore {
   updateDecision: (updates: Partial<Decision>) => void
   updateVoteCounts: (counts: Partial<VoteCounts>) => void
 
+  addSegment: (segment: Segment) => void
+  removeSegment: (id: string) => void
+
   reset: () => void
 }
 
@@ -73,6 +76,17 @@ export const useShowStore = create<ShowStore>((set) => ({
       voteCounts: state.voteCounts
         ? { ...state.voteCounts, ...counts }
         : (counts as VoteCounts),
+    })),
+
+  addSegment: (segment) =>
+    set((state) => ({
+      segments: [...state.segments, segment].sort((a, b) => a.orderIndex - b.orderIndex),
+    })),
+
+  removeSegment: (id) =>
+    set((state) => ({
+      segments: state.segments.filter((s) => s.id !== id),
+      activeSegment: state.activeSegment?.id === id ? null : state.activeSegment,
     })),
 
   reset: () => set(initialState),

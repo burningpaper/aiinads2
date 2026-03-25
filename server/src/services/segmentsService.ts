@@ -24,6 +24,51 @@ export const segmentsService = {
     return toCamelCase(rows[0]) as Segment
   },
 
+  async create(showId: string, data: { title: string }): Promise<Segment> {
+    // Get next order index for this show
+    const countResult = await sql`
+      SELECT COALESCE(MAX(order_index), 0) + 1 as next_index
+      FROM segments WHERE show_id = ${showId}
+    `
+    const nextIndex = parseInt(String(countResult[0].next_index), 10)
+
+    const rows = await sql`
+      INSERT INTO segments (show_id, order_index, title, status)
+      VALUES (${showId}, ${nextIndex}, ${data.title}, 'draft')
+      RETURNING *
+    `
+    return toCamelCase(rows[0]) as Segment
+  },
+
+  async delete(segmentId: string): Promise<void> {
+    const segment = await this.getById(segmentId)
+
+    // Don't allow deleting live segments
+    if (segment.status === 'live') {
+      throw new Error('Cannot delete a live segment')
+    }
+
+    // Delete related data first (cascading)
+    await sql`DELETE FROM votes WHERE decision_id IN (SELECT id FROM decisions WHERE segment_id = ${segmentId})`
+    await sql`DELETE FROM decisions WHERE segment_id = ${segmentId}`
+    await sql`DELETE FROM segment_content WHERE segment_id = ${segmentId}`
+    await sql`DELETE FROM comments WHERE segment_id = ${segmentId}`
+    await sql`DELETE FROM ai_summaries WHERE segment_id = ${segmentId}`
+
+    // Delete the segment
+    await sql`DELETE FROM segments WHERE id = ${segmentId}`
+
+    // Reorder remaining segments
+    await sql`
+      WITH numbered AS (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY order_index) as new_index
+        FROM segments WHERE show_id = ${segment.showId}
+      )
+      UPDATE segments SET order_index = numbered.new_index
+      FROM numbered WHERE segments.id = numbered.id
+    `
+  },
+
   async getFullData(segmentId: string) {
     const segment = await this.getById(segmentId)
 

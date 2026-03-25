@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useClerk } from '@clerk/clerk-react'
 import { useShowStore } from '@/stores/showStore'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { Show } from '@/types'
+import type { Show, Segment } from '@/types'
 
 interface AdminSidebarProps {
   userName: string
@@ -13,13 +14,25 @@ export function AdminSidebar({ userName }: AdminSidebarProps) {
   const location = useLocation()
   const { signOut } = useClerk()
   const queryClient = useQueryClient()
-  const { show, segments, isConnected } = useShowStore()
+  const { show, segments, isConnected, addSegment } = useShowStore()
+  const [isAddingSegment, setIsAddingSegment] = useState(false)
+  const [newSegmentTitle, setNewSegmentTitle] = useState('')
 
   const updateShowMutation = useMutation({
     mutationFn: (status: 'live' | 'closed') =>
       api.patch<Show>(`/shows/${show?.id}`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['show'] })
+    },
+  })
+
+  const addSegmentMutation = useMutation({
+    mutationFn: (title: string) =>
+      api.post<Segment>('/segments', { showId: show?.id, title }),
+    onSuccess: (segment) => {
+      addSegment(segment)
+      setIsAddingSegment(false)
+      setNewSegmentTitle('')
     },
   })
 
@@ -152,6 +165,60 @@ export function AdminSidebar({ userName }: AdminSidebarProps) {
             )
           })}
         </ul>
+
+        {/* Add Segment */}
+        {isAddingSegment ? (
+          <div className="mt-3 px-2">
+            <input
+              type="text"
+              value={newSegmentTitle}
+              onChange={(e) => setNewSegmentTitle(e.target.value)}
+              placeholder="Segment title..."
+              className="w-full px-3 py-2 bg-primary-800 border border-primary-700 rounded-lg text-white text-sm placeholder-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newSegmentTitle.trim()) {
+                  addSegmentMutation.mutate(newSegmentTitle.trim())
+                } else if (e.key === 'Escape') {
+                  setIsAddingSegment(false)
+                  setNewSegmentTitle('')
+                }
+              }}
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => {
+                  if (newSegmentTitle.trim()) {
+                    addSegmentMutation.mutate(newSegmentTitle.trim())
+                  }
+                }}
+                disabled={!newSegmentTitle.trim() || addSegmentMutation.isPending}
+                className="flex-1 bg-primary-600 hover:bg-primary-500 disabled:bg-primary-700 text-white py-1 px-3 rounded text-sm font-medium transition-colors"
+              >
+                {addSegmentMutation.isPending ? 'Adding...' : 'Add'}
+              </button>
+              <button
+                onClick={() => {
+                  setIsAddingSegment(false)
+                  setNewSegmentTitle('')
+                }}
+                className="px-3 py-1 text-primary-400 hover:text-white text-sm transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAddingSegment(true)}
+            className="mt-3 w-full flex items-center gap-2 px-3 py-2 text-primary-400 hover:text-white hover:bg-primary-800 rounded-lg transition-colors text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Add Segment</span>
+          </button>
+        )}
       </nav>
 
       {/* Footer */}

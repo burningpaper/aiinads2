@@ -9,6 +9,26 @@ import { emitToShow } from '../socket.js'
 
 const router = Router()
 
+// Create segment for a show (admin only)
+router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { showId, title } = req.body
+    if (!showId || !title) {
+      res.status(400).json({ error: 'showId and title are required' })
+      return
+    }
+
+    const segment = await segmentsService.create(showId, { title })
+
+    const io = req.app.get('io')
+    emitToShow(io, showId, 'segment:created', segment)
+
+    res.status(201).json(segment)
+  } catch (error) {
+    next(error)
+  }
+})
+
 // Get segment with full data (public)
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -28,6 +48,23 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response, next: Next
     emitToShow(io, segment.showId, 'segment:updated', segment)
 
     res.json(segment)
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Delete segment (admin only)
+router.delete('/:id', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const segment = await segmentsService.getById(req.params.id)
+    const showId = segment.showId
+
+    await segmentsService.delete(req.params.id)
+
+    const io = req.app.get('io')
+    emitToShow(io, showId, 'segment:deleted', { id: req.params.id })
+
+    res.status(204).send()
   } catch (error) {
     next(error)
   }
