@@ -1,13 +1,53 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useShowStore } from '@/stores/showStore'
 import { Link } from 'react-router-dom'
 import { api } from '@/lib/api'
+import type { Show } from '@/types'
 
 export function DashboardHome() {
-  const { show, segments } = useShowStore()
+  const { show, segments, updateShow } = useShowStore()
   const queryClient = useQueryClient()
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editedTitle, setEditedTitle] = useState('')
+  const titleInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus()
+      titleInputRef.current.select()
+    }
+  }, [isEditingTitle])
+
+  const updateShowMutation = useMutation({
+    mutationFn: (title: string) =>
+      api.patch<Show>(`/shows/${show?.id}`, { title }),
+    onSuccess: (updatedShow) => {
+      updateShow({ title: updatedShow.title })
+      queryClient.invalidateQueries({ queryKey: ['show'] })
+      setIsEditingTitle(false)
+    },
+  })
+
+  const handleStartEditing = () => {
+    setEditedTitle(show?.title || '')
+    setIsEditingTitle(true)
+  }
+
+  const handleSaveTitle = () => {
+    const trimmedTitle = editedTitle.trim()
+    if (trimmedTitle && trimmedTitle !== show?.title) {
+      updateShowMutation.mutate(trimmedTitle)
+    } else {
+      setIsEditingTitle(false)
+    }
+  }
+
+  const handleCancelEditing = () => {
+    setIsEditingTitle(false)
+    setEditedTitle('')
+  }
 
   const resetMutation = useMutation({
     mutationFn: () => api.post(`/shows/${show?.id}/reset`, {}),
@@ -28,7 +68,65 @@ export function DashboardHome() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-serif text-3xl text-gray-900 mb-8">{show?.title}</h1>
+      {/* Editable Show Title */}
+      <div className="mb-8">
+        {isEditingTitle ? (
+          <div className="flex items-center gap-3">
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveTitle()
+                if (e.key === 'Escape') handleCancelEditing()
+              }}
+              className="font-serif text-3xl text-gray-900 bg-white border-2 border-primary-500 rounded-lg px-3 py-1 outline-none flex-1"
+              disabled={updateShowMutation.isPending}
+            />
+            <button
+              onClick={handleSaveTitle}
+              disabled={updateShowMutation.isPending}
+              className="p-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors"
+              title="Save"
+            >
+              {updateShowMutation.isPending ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={handleCancelEditing}
+              disabled={updateShowMutation.isPending}
+              className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+              title="Cancel"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 group">
+            <h1 className="font-serif text-3xl text-gray-900">{show?.title}</h1>
+            <button
+              onClick={handleStartEditing}
+              className="p-2 text-gray-400 hover:text-primary-600 opacity-0 group-hover:opacity-100 transition-all"
+              title="Edit show name"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-6 mb-8">
