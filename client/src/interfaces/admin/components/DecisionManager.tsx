@@ -88,13 +88,7 @@ export function DecisionManager({ segmentId, decision, voteCounts, isSegmentLive
   }
 
   const handleClose = () => {
-    console.log('handleClose called, decision:', decision?.id, 'status:', decision?.status)
-    if (confirm('Close voting?')) {
-      console.log('User confirmed, calling closeMutation.mutate()')
-      closeMutation.mutate()
-    } else {
-      console.log('User cancelled close voting')
-    }
+    closeMutation.mutate()
   }
 
   const handleReopenWithCountdown = (seconds: number | null) => {
