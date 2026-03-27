@@ -6,6 +6,7 @@ const mockShow: Show = {
   id: '00000000-0000-0000-0000-000000000001',
   title: 'Test Show',
   status: 'setup',
+  showMiniSite: false,
   createdAt: '2024-01-01T00:00:00Z',
 }
 

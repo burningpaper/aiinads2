@@ -5,6 +5,7 @@ export interface Show {
   id: string
   title: string
   status: 'setup' | 'live' | 'closed'
+  showMiniSite: boolean
   createdAt: string
   updatedAt: string
 }
@@ -30,17 +31,10 @@ export const showsService = {
       return toCamelCase(liveRows[0]) as Show
     }
 
-    // Priority 2: If any show is in setup, a new event is being prepared
-    // Return null so audience sees holding screen
-    const setupRows = await sql`SELECT * FROM shows WHERE status = 'setup' LIMIT 1`
-    if (setupRows.length > 0) {
-      return null
-    }
-
-    // Priority 3: All shows are closed - return most recently closed for mini-site
-    const closedRows = await sql`SELECT * FROM shows WHERE status = 'closed' ORDER BY updated_at DESC LIMIT 1`
-    if (closedRows.length > 0) {
-      return toCamelCase(closedRows[0]) as Show
+    // Priority 2: Show explicitly set to display mini-site
+    const miniSiteRows = await sql`SELECT * FROM shows WHERE show_mini_site = true ORDER BY updated_at DESC LIMIT 1`
+    if (miniSiteRows.length > 0) {
+      return toCamelCase(miniSiteRows[0]) as Show
     }
 
     return null
@@ -82,9 +76,9 @@ export const showsService = {
     return toCamelCase(rows[0]) as Show
   },
 
-  async update(id: string, data: Partial<Pick<Show, 'title' | 'status'>>): Promise<Show> {
+  async update(id: string, data: Partial<Pick<Show, 'title' | 'status' | 'showMiniSite'>>): Promise<Show> {
     // Return existing if no updates provided
-    if (data.title === undefined && data.status === undefined) {
+    if (data.title === undefined && data.status === undefined && data.showMiniSite === undefined) {
       return this.getById(id)
     }
 
@@ -93,10 +87,16 @@ export const showsService = {
       await sql`UPDATE shows SET status = 'closed' WHERE status = 'live' AND id != ${id}`
     }
 
+    // Only one show can have mini-site enabled at a time
+    if (data.showMiniSite === true) {
+      await sql`UPDATE shows SET show_mini_site = false WHERE show_mini_site = true AND id != ${id}`
+    }
+
     const rows = await sql`
       UPDATE shows
       SET title = COALESCE(${data.title}, title),
-          status = COALESCE(${data.status}, status)
+          status = COALESCE(${data.status}, status),
+          show_mini_site = COALESCE(${data.showMiniSite}, show_mini_site)
       WHERE id = ${id}
       RETURNING *
     `

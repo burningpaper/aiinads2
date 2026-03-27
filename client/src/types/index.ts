@@ -7,6 +7,7 @@ export interface Show {
   id: string
   title: string
   status: ShowStatus
+  showMiniSite: boolean
   createdAt: string
 }
 
