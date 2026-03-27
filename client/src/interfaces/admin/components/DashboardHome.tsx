@@ -65,6 +65,10 @@ export function DashboardHome() {
       updateShow({ showMiniSite: updatedShow.showMiniSite })
       queryClient.invalidateQueries({ queryKey: ['show'] })
     },
+    onError: (error) => {
+      console.error('Failed to toggle mini-site:', error)
+      alert('Failed to update mini-site setting. The migration may not have run yet - try restarting the server.')
+    },
   })
 
   const handleExport = (type: 'votes' | 'comments') => {
