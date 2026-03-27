@@ -24,16 +24,25 @@ export const showsService = {
   },
 
   async getActiveOrClosed(): Promise<Show | null> {
-    // First try to get a live show
+    // Priority 1: Live show (event in progress)
     const liveRows = await sql`SELECT * FROM shows WHERE status = 'live' LIMIT 1`
     if (liveRows.length > 0) {
       return toCamelCase(liveRows[0]) as Show
     }
-    // If no live show, get the most recently closed show
+
+    // Priority 2: If any show is in setup, a new event is being prepared
+    // Return null so audience sees holding screen
+    const setupRows = await sql`SELECT * FROM shows WHERE status = 'setup' LIMIT 1`
+    if (setupRows.length > 0) {
+      return null
+    }
+
+    // Priority 3: All shows are closed - return most recently closed for mini-site
     const closedRows = await sql`SELECT * FROM shows WHERE status = 'closed' ORDER BY updated_at DESC LIMIT 1`
     if (closedRows.length > 0) {
       return toCamelCase(closedRows[0]) as Show
     }
+
     return null
   },
 
