@@ -31,15 +31,16 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
   }
 })
 
-// Get currently live show state (public - for presentation view)
+// Get currently live or recently closed show state (public - for audience/presentation view)
 router.get('/live/state', async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const liveShow = await showsService.getLive()
-    if (!liveShow) {
+    // Returns live show, or most recently closed show for mini-site
+    const show = await showsService.getActiveOrClosed()
+    if (!show) {
       res.json({ show: null, segments: [], activeSegment: null, content: [], decision: null, voteCounts: null })
       return
     }
-    const state = await showsService.getFullState(liveShow.id)
+    const state = await showsService.getFullState(show.id)
     res.json(state)
   } catch (error) {
     next(error)

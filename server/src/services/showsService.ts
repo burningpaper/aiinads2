@@ -23,6 +23,20 @@ export const showsService = {
     return toCamelCase(rows[0]) as Show
   },
 
+  async getActiveOrClosed(): Promise<Show | null> {
+    // First try to get a live show
+    const liveRows = await sql`SELECT * FROM shows WHERE status = 'live' LIMIT 1`
+    if (liveRows.length > 0) {
+      return toCamelCase(liveRows[0]) as Show
+    }
+    // If no live show, get the most recently closed show
+    const closedRows = await sql`SELECT * FROM shows WHERE status = 'closed' ORDER BY updated_at DESC LIMIT 1`
+    if (closedRows.length > 0) {
+      return toCamelCase(closedRows[0]) as Show
+    }
+    return null
+  },
+
   async create(title: string): Promise<Show> {
     // Create the show
     const showRows = await sql`
